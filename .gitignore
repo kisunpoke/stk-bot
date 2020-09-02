@@ -131,3 +131,6 @@ dmypy.json
 osukey
 token
 .vscode/
+old/
+secrets.txt
+dburl
