@@ -1,2 +1,2 @@
-# stk8-bot
+# stk-bot
 aaaaaaaaaaaaaaaa
