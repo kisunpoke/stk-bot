@@ -1,0 +1,1 @@
+"""Team and player bot commands/cogs."""
