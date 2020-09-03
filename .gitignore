@@ -134,3 +134,5 @@ token
 old/
 secrets.txt
 dburl
+credentials.json
+token.pickle
