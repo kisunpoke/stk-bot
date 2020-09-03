@@ -46,6 +46,8 @@ The cluster structure is as follows:
 {
     map_id: str
     map_type: str (of NM, HD, HR, etc)
+    map_url: str
+    thumbnail_url: str
     meta:{
         map_artist: str
         map_song: str
@@ -59,7 +61,7 @@ The cluster structure is as follows:
 
 `Player` documents have the following fields:
 {
-    user_id: string
+    _id: string (of user id; guaranteed to be unique)
     user_name: string
     scores: [str, str, ...] (list of `Score` _id)
     cached:{**
@@ -78,11 +80,13 @@ The cluster structure is as follows:
             miss_count: int
         }
         1_miss_plays: int
+        pfp_url: str
     }
 }
 
 `Team` documents have the following fields:
 {
+    name: str
     players: [str, str, ...] (of player ids)
     cached:{**
         average_acc: double
