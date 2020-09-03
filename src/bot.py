@@ -18,6 +18,7 @@ db_url = open("dburl").read()
 bot = commands.Bot(command_prefix='!!')
 
 bot.add_cog(Greetings(bot))
+bot.add_cog(team_commands.PlayerCommands(bot))
 
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
