@@ -291,16 +291,21 @@ async def add_scores(matches_data):
     """"""
     pass
 
-async def rebuild_all(sheet_id):
+async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
     databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
+    steps = 5
+    await ctx.send(f"dropping databases... (1/{steps})")
     for database in databases:
         await client.drop_database(database)
         print("dropped %s"%database)
-
+    await ctx.send(f"getting gsheet info... (2/{steps})")
     data = await get_all_gsheet_data(sheet_id)
+    await ctx.send(f"building meta db (3/{steps})")
     await add_meta(data['meta'])
+    await ctx.send(f"building mappool db (4/{steps})")
     await add_pools(data['pools'])
+    await ctx.send(f"building team and player db (5/{steps})")
     await add_players_and_teams(data['teams'])
 
 #gsheet functions

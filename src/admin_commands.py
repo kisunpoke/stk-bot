@@ -29,6 +29,6 @@ class AdminDatabaseCommands(commands.Cog):
     async def forceupdate(self, ctx, sheet_id):
         """Rebuild the *entire* database from scratch from the specified gsheet id."""
         await ctx.send("ok, processing")
-        data = await db_manip.rebuild_all(sheet_id)
+        data = await db_manip.rebuild_all(sheet_id, ctx)
         await ctx.send("done")
         
