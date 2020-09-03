@@ -2,7 +2,6 @@
 import discord
 from discord.ext import commands
 
-from aaaa import Greetings
 import admin_commands
 import match_commands
 import team_commands
@@ -39,7 +38,6 @@ token = open("token").read()
 
 bot = commands.Bot(command_prefix='!!')
 
-bot.add_cog(Greetings(bot))
 bot.add_cog(team_commands.PlayerCommands(bot))
 bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
 
