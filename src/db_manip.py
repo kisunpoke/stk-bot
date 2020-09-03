@@ -101,3 +101,27 @@ will probably drop them if/when i decide the usage of this bot will probably be 
 note that numbers that should not have numerical calculations performed
 on them is a string, not an int as the data might suggest
 """
+import motor.motor_asyncio
+import pprint
+
+#to implement pagination we can use cursor.skip()
+#see https://docs.mongodb.com/manual/reference/method/cursor.skip/
+#and https://stackoverflow.com/questions/57159663/mongodb-get-element-in-the-middle-of-a-find-sort-result-using-nodejs-native-driv
+db_url = open("dburl").read()
+
+client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
+db = client['test']
+collection = db['test-data']
+
+async def getval(value):
+    """Get pymongo stuff ala motor"""
+    document = await collection.find_one({'i': value})
+    pprint.pprint(document)
+    return document
+
+async def setval(value):
+    """Set pymongo stuff ala motor"""
+    document = {'i': value}
+    result = await collection.insert_one(document)
+    print('result %s' % repr(result.inserted_id))
+    return ("done")

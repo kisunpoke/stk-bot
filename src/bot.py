@@ -7,39 +7,15 @@ import admin_commands
 import match_commands
 import team_commands
 
-
-import motor.motor_asyncio
-
 #use environment variables for these later
 token = open("token").read()
 api_key = open("osukey").read()
-db_url = open("dburl").read()
 
 bot = commands.Bot(command_prefix='!!')
 
 bot.add_cog(Greetings(bot))
 bot.add_cog(team_commands.PlayerCommands(bot))
-
-#to implement pagination we can use cursor.skip()
-#see https://docs.mongodb.com/manual/reference/method/cursor.skip/
-#and https://stackoverflow.com/questions/57159663/mongodb-get-element-in-the-middle-of-a-find-sort-result-using-nodejs-native-driv
-
-client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
-db = client['test']
-collection = db['test-data']
-@bot.command()
-async def getval(ctx, value):
-    """Get pymongo stuff ala motor"""
-    document = await collection.find_one({'i': value})
-    import pprint
-    pprint.pprint(document)
-
-@bot.command()
-async def setval(ctx, value):
-    """Set pymongo stuff ala motor"""
-    document = {'i': value}
-    result = await collection.insert_one(document)
-    print('result %s' % repr(result.inserted_id))
+bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
 
 @bot.event
 async def on_ready():
