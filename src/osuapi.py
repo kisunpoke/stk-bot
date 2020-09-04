@@ -16,7 +16,7 @@ async def get_player_data(username):
     async with aiohttp.ClientSession() as session:
         player_request = await session.get(f'https://osu.ppy.sh/api/get_user?k={api_key}&u={username}')
         player_data = await player_request.json()
-    print(player_data)
+    #print(player_data)
     return player_data[0]
 
 async def get_map_data(diff_id):
