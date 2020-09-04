@@ -45,12 +45,9 @@ bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
 async def on_ready():
     print('ready!')
 
-@bot.command(pass_context=True)
-async def test(ctx,page=None):
-    if page:
-        await ctx.channel.send(f'{page} requested.')
-    else:
-        await ctx.channel.send("Default requested.")
+@bot.event
+async def on_command_error(ctx, exception):
+    await ctx.send(f"The following error occurred: {exception}")
 
 bot.run(token)
 
