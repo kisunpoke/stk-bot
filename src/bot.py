@@ -39,6 +39,7 @@ token = open("token").read()
 bot = commands.Bot(command_prefix='!!')
 
 bot.add_cog(team_commands.PlayerCommands(bot))
+bot.add_cog(team_commands.TeamCommands(bot))
 bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
 
 @bot.event
