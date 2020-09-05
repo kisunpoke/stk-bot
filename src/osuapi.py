@@ -3,10 +3,6 @@
 This uses the v1 endpoint because it is more stable. Use v2 when available or
 necessary.
 """
-#will stop working on this until i can get database structuring down
-#i would much prefer it query the db wherever possible for getting map data so it's impossible
-#to burn through the request limit in a short amount of time
-
 import aiohttp
 
 api_key = open("osukey").read()
@@ -21,7 +17,6 @@ async def get_player_data(username):
 
 async def get_map_data(diff_id):
     async with aiohttp.ClientSession() as session:
-        map_url = f'https://osu.ppy.sh/b/{diff_id}'
         map_request = await session.get(f'https://osu.ppy.sh/api/get_beatmaps?k={api_key}&b={diff_id}')
         map_data = await map_request.json()
     '''
@@ -35,6 +30,12 @@ async def get_map_data(diff_id):
     return data
     '''
     return map_data
+
+async def get_match_data(match_id):
+    async with aiohttp.ClientSession() as session:
+        match_request = await session.get(f'https://osu.ppy.sh/api/get_beatmaps?k={api_key}&mp={match_id}')
+        match_data = await match_request.json()
+    return match_data
 
 '''
 async def get_match(match_id, map=None):
