@@ -51,36 +51,3 @@ class PlayerCommands(commands.Cog):
         use !!best <player> for more scores, or !!card <player> for a player card
         '''
         pass
-
-    @commands.command()
-    async def card(self, ctx, player):
-        """Generate and return a player card (as a direct image)."""
-        img = Image.open("src/static/black.png", mode='r') #Replace infoimgimg.png with your background image.
-
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype("src/static/Nunito-Regular.ttf", 100) #Make sure you insert a valid font from your folder.
-        draw.text((200, 0), "Information:", (255, 255, 255), font=font) #draws Information
-        #this just did not work
-        #i guess you have to seek before you actually do the thing
-        #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
-        #imgByteArr = io.BytesIO()
-        #img.save(imgByteArr, format='PNG')
-        #imgByteArr = imgByteArr.getvalue()
-        #print(imgByteArr)
-        with io.BytesIO() as img_binary:
-            img.save(img_binary, 'PNG')
-            img_binary.seek(0)
-            await ctx.send(file=discord.File(fp=img_binary, filename='player_card.png'))
-
-    @commands.command()
-    async def efa(self, ctx, player):
-        """Generate and return a player card (as a direct image)."""
-        
-        img = Image.open("src/static/black.png", mode='r') #Replace infoimgimg.png with your background image.
-        imgByteArr = io.BytesIO()
-        img.save(imgByteArr, format='PNG')
-        imgByteArr = imgByteArr.getvalue()
-        #print()
-        print(imgByteArr)
-        #await ctx.send("done")
-        await ctx.send(file=discord.File(imgByteArr, "player_card.png"))
