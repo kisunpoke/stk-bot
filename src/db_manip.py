@@ -132,18 +132,19 @@ import osuapi
 db_url = open("dburl").read()
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
-db = client['test']
-collection = db['test-data']
 
-async def getval(value):
-    """Get pymongo stuff ala motor"""
-    document = await collection.find_one({'i': value})
-    pprint.pprint(document)
+async def getval(key, value, db='test', collection='test-data'):
+    """Find and return the MongoDB document with key:value in db[collection]."""
+    db = client[db]
+    collection = db[collection]
+    document = await collection.find_one({key: value})
     return document
 
-async def setval(value):
-    """Set pymongo stuff ala motor"""
-    document = {'i': value}
+async def setval(key, value, db='test', collection='test-data'):
+    """..."""
+    db = client[db]
+    collection = db[collection]
+    document = {key: value}
     result = await collection.insert_one(document)
     print('result %s' % repr(result.inserted_id))
     return ("done")
@@ -291,26 +292,6 @@ async def add_scores(matches_data):
     """"""
     pass
 
-async def rebuild_all(sheet_id, ctx):
-    """Drops ALL non-test databases, then rebuilds them using gsheet data."""
-    databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
-    steps = 5
-    await ctx.send(f"dropping databases... (1/{steps})")
-    for database in databases:
-        await client.drop_database(database)
-        print("dropped %s"%database)
-    await ctx.send(f"getting gsheet info... (2/{steps})")
-    data = await get_all_gsheet_data(sheet_id)
-    await ctx.send(f"building meta db (3/{steps})")
-    await add_meta(data['meta'])
-    await ctx.send(f"building mappool db (4/{steps})")
-    await add_pools(data['pools'])
-    await ctx.send(f"building team and player db (5/{steps})")
-    await add_players_and_teams(data['teams'])
-
-#gsheet functions
-#ill figure out where to put this later
-
 async def get_all_gsheet_data(sheet_id):
     #this WILL block the bot during execution
     #however, this is desired as we don't want other things to happen while we're doing this
@@ -371,3 +352,20 @@ async def get_all_gsheet_data(sheet_id):
                 print(row)
         '''
     return output
+
+async def rebuild_all(sheet_id, ctx):
+    """Drops ALL non-test databases, then rebuilds them using gsheet data."""
+    databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
+    steps = 5
+    await ctx.send(f"dropping databases... (1/{steps})")
+    for database in databases:
+        await client.drop_database(database)
+        print("dropped %s"%database)
+    await ctx.send(f"getting gsheet info... (2/{steps})")
+    data = await get_all_gsheet_data(sheet_id)
+    await ctx.send(f"building meta db (3/{steps})")
+    await add_meta(data['meta'])
+    await ctx.send(f"building mappool db (4/{steps})")
+    await add_pools(data['pools'])
+    await ctx.send(f"building team and player db (5/{steps})")
+    await add_players_and_teams(data['teams'])

@@ -2,6 +2,7 @@
 import discord
 from discord.ext import commands
 import db_manip
+import pprint
 
 class AdminConfigCommands(commands.Cog):
     def __init__(self, bot):
@@ -12,12 +13,11 @@ class AdminDatabaseCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def getval(self, ctx, value):
-        """Generate and return a player card (as a direct image)."""
-        e = await db_manip.getval(value)
-        import pprint
-        pprint.pprint(e)
-        await ctx.send("done")
+    async def getval(self, ctx, key, value, db, collection):
+        """Find and send the MongoDB document with key:value in db[collection], pretty-printed."""
+        document = await db_manip.getval(key, value, db, collection)
+        pprint_doc = pprint.pformat(document, indent=4)
+        await ctx.send(pprint_doc)
 
     @commands.command()
     async def setval(self, ctx, value):
