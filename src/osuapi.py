@@ -33,7 +33,7 @@ async def get_map_data(diff_id):
 
 async def get_match_data(match_id):
     async with aiohttp.ClientSession() as session:
-        match_request = await session.get(f'https://osu.ppy.sh/api/get_beatmaps?k={api_key}&mp={match_id}')
+        match_request = await session.get(f'https://osu.ppy.sh/api/get_match?k={api_key}&mp={match_id}')
         match_data = await match_request.json()
     return match_data
 
