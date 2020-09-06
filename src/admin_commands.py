@@ -56,12 +56,19 @@ class AdminDatabaseCommands(commands.Cog):
         await ctx.send("done")
 
     @commands.command()
+    async def deleteval(self, ctx, key, value, db='test', collection='test-data'):
+        """Generate and return a player card (as a direct image)."""
+        await db_manip.deleteval(key, value, db, collection)
+        await ctx.send("done")
+
+    @commands.command()
     async def rebuildall(self, ctx, sheet_id=None):
         """Rebuild the *entire* database from scratch from the specified gsheet id."""
         if sheet_id is not None:
-            await ctx.send("ok, processing")
-            data = await db_manip.rebuild_all(sheet_id, ctx)
-            await ctx.send("done")
+            if await confirmation_dialog(self.bot, ctx, "Rebuild all?"):
+                await ctx.send("ok, processing")
+                await db_manip.rebuild_all(sheet_id, ctx)
+                await ctx.send("done")
         else:
             #now actually make the list; ids should be a hyperlink
             await ctx.send("here's a hardcoded list of gsheet ids")
@@ -94,3 +101,28 @@ class AdminDatabaseCommands(commands.Cog):
             await ctx.send("ok, done; you may also want to consider adding this team to the data spreadsheet")
         else:
             await ctx.send("Canceled.")
+
+    @commands.command()
+    async def deleteteam(self, ctx, team_name):
+        """Delete `team_name` from the database."""
+        #team_document = await
+        team_document = None
+        if team_document is None:
+            await ctx.send("Couldn't find that team. Use quotes if there are spaces.")
+        else:
+            player_str = "\n".join(team_document['players'])
+            confirmation_msg = (
+                f"You are deleting the following team:\n\n"
+                f"**{team_name}\n**"
+                f"{player_str}\n\n"
+                f"Are you sure?"
+            )
+            footer = "If you are editing/deleting many at once, you may want to consider using !!rebuildplayers."
+            response = await confirmation_dialog(self.bot, ctx, confirmation_msg, footer)
+            if response:
+                await ctx.send(f"ok, deleting the team {team_name}")
+                #won't uncomment for now
+                #await db_manip.add_players_and_teams(player_data)
+                await ctx.send("ok, done; you may also want to update this team on the data spreadsheet")
+            else:
+                await ctx.send("Canceled.")

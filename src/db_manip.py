@@ -149,6 +149,14 @@ async def setval(key, value, db='test', collection='test-data'):
     print('result %s' % repr(result.inserted_id))
     return ("done")
 
+async def deleteval(key, value, db='test', collection='test-data'):
+    """Delete the document with key: value in db[collection]."""
+    db = client[db]
+    collection = db[collection]
+    document = {key: value}
+    result = await collection.delete_one(document)
+    print(result)
+
 #move to util, maybe?
 #see https://stackoverflow.com/questions/38758668/grouping-functions-by-using-classes-in-python
 async def add_meta(meta_data):
@@ -156,7 +164,6 @@ async def add_meta(meta_data):
     db = client['tournament_data']
     collection = db['meta']
 
-    print(meta_data)
     document = {
         "full_name": meta_data[0][1],
         "shorthand": meta_data[1][1],
@@ -181,11 +188,16 @@ async def add_pools(pool_data):
     db = client['mappools']
     
     current_collection = None
-    current_pool = []
-    current_pool_name = ""
+    current_pool_docs = []
+    current_pool_collection = ""
     for map in pool_data:
         if map[0] != '':
             #this signifies that we are on a new mappool
+            #so we now insert all of the existing documents
+            #don't do unless a pool is currently being created
+            if current_pool_collection:
+                pool_collection = db[current_pool_collection]
+                await pool_collection.insert_many(current_pool_docs)
             #we expect the first map to always have an identifier
             collection = db['meta']
             pool_meta = map[0].split(", ")
@@ -198,7 +210,7 @@ async def add_pools(pool_data):
             }
             await collection.insert_one(document)
 
-            current_pool_name = pool_short
+            current_pool_collection = pool_short
             current_collection = db[pool_short]
         #get and process map data
         map_data = await osuapi.get_map_data(map[1])
@@ -206,7 +218,7 @@ async def add_pools(pool_data):
         map_data = map_data[0]
         #note how we do not make any additional calculations to bpm or drain time
         #we can do that elsewhere, not here
-        document = {
+        map_document = {
             '_id': map[1],
             'pool_id': map[3],
             'map_type': map[2],
@@ -222,7 +234,10 @@ async def add_pools(pool_data):
                 'drain_time': map_data["total_length"],
             }
         }
-        await current_collection.insert_one(document)
+        current_pool_docs.append(map_document)
+    #add the remaining maps
+    pool_collection = db[current_pool_collection]
+    await pool_collection.insert_many(current_pool_docs)
 
 async def add_players_and_teams(player_data):
     """Update the `tournament_data` database from `player_data`.
@@ -242,6 +257,9 @@ async def add_players_and_teams(player_data):
     team_collection = db['teams']
     player_collection = db['players']
 
+    team_documents = []
+    player_documents = []
+
     for team in player_data:
         #first, add the new team
         players = team[1:]
@@ -259,7 +277,8 @@ async def add_players_and_teams(player_data):
                 'contrib_rank': 0
             }
         }
-        await team_collection.insert_one(team_document)
+        team_documents.append(team_document)
+
         #then iterate over each player id
         #really we don't do anything with player_data but at least you can expand it easily
         for player_index, player_id in enumerate(player_ids):
@@ -286,8 +305,10 @@ async def add_players_and_teams(player_data):
                     }
                 }
             }
-            await player_collection.insert_one(player_document)
- 
+            player_documents.append(player_document)
+    await player_collection.insert_many(player_documents)
+    await team_collection.insert_many(team_documents)
+
 async def add_scores(matches_data):
     """"""
     pass
