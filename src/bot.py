@@ -36,7 +36,7 @@ match stats (text), overall match details
 #use environment variables for these later
 token = open("token").read()
 
-bot = commands.Bot(command_prefix='!!')
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 
 bot.add_cog(team_commands.PlayerCommands(bot))
 bot.add_cog(team_commands.TeamCommands(bot))

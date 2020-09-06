@@ -21,12 +21,20 @@ The cluster structure is as follows:
         -teams: collection of `Team` documents
     -tournament_data
         -meta: a single `Meta` docuemnt
+        -discord_users: collection of `DiscordUser` documents
 
 `Meta` documents have the following fields:
 {
     full_name: str
     shorthand: str
     icon_url: str
+}
+
+`DiscordUser` documents have the following fields:
+{
+    _id: str (discord user id; guaranteed to be unique)
+    osu_name: str
+    osu_id: str
 }
 
 `Score` documents have the following fields:
