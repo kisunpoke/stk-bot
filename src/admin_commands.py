@@ -8,27 +8,31 @@ import db_manip
 import pprint
 import asyncio
 
-async def confirmation_dialog(bot, ctx, content):
+async def confirmation_dialog(bot, ctx, content, footer=""):
     """Generate and send a reaction-based confirmation dialog."""
-    #em_msg = discord.Embed(description=content)
-    conf_message = await ctx.send(content)
+    em_msg = discord.Embed(description=content)
+    if footer:
+        em_msg.set_footer(text=footer)
+    conf_message = await ctx.send(embed=em_msg)
     await conf_message.add_reaction('✅')
     await conf_message.add_reaction('❌')
 
     def check(reaction, user):
-        print("checking")
-        print(f"{user} == {ctx.author}: {user == ctx.author}")
-        print(f"{str(reaction.emoji)} == '✅': {str(reaction.emoji) == '✅'}")
-        print(f"{reaction.message} == {conf_message}: {reaction.message == conf_message}")
-        #return user == ctx.author and str(reaction.emoji) == '✅' and reaction.message.id == conf_message.id
-        return user == ctx.author and reaction.message.id == conf_message.id
+        #verify that the user who initiated the command is reacting to the right message
+        #(also ignore any other reactoins)
+        return user == ctx.author and reaction.message.id == conf_message.id and reaction.emoji in ('❌', '✅')
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=10.0, check=check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=20.0, check=check)
+        await conf_message.delete()
     except asyncio.TimeoutError:
-        await ctx.send('hurry up lol')
+        #we could delete the confirmation message here
+        await ctx.send('Response timed out.')
     else:
-        await ctx.send(f'{reaction.emoji}')
+        if reaction.emoji == '✅':
+            return True
+        else:
+            return False
 
 class AdminConfigCommands(commands.Cog):
     def __init__(self, bot):
@@ -52,7 +56,7 @@ class AdminDatabaseCommands(commands.Cog):
         await ctx.send("done")
 
     @commands.command()
-    async def forcerebuild(self, ctx, sheet_id=None):
+    async def rebuildall(self, ctx, sheet_id=None):
         """Rebuild the *entire* database from scratch from the specified gsheet id."""
         if sheet_id is not None:
             await ctx.send("ok, processing")
@@ -81,14 +85,12 @@ class AdminDatabaseCommands(commands.Cog):
             f"{player_str}\n\n"
             f"Is this correct?"
         )
-
-        await confirmation_dialog(self.bot, ctx, confirmation_msg)
-        '''
-        await ctx.send(f"ok, adding the team {player_data}")
-        #here should be an embed with yes/no reactions, deleted on reaction
-        #confirm if this is the desired action
-
-        #won't uncomment for now
-        #await db_manip.add_players_and_teams(player_data)
-        await ctx.send("ok, done; you may also want to consider adding this team to the data spreadsheet")
-        '''
+        footer = "If you are adding many at once, you may want to consider using !!rebuildplayers."
+        response = await confirmation_dialog(self.bot, ctx, confirmation_msg, footer)
+        if response:
+            await ctx.send(f"ok, adding the team {player_data}")
+            #won't uncomment for now
+            #await db_manip.add_players_and_teams(player_data)
+            await ctx.send("ok, done; you may also want to consider adding this team to the data spreadsheet")
+        else:
+            await ctx.send("Canceled.")
