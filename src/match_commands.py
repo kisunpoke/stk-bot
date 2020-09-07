@@ -188,8 +188,8 @@ async def get_individual_match_data(match_id, map, data=None):
         team_2_score_string = "\n".join(team_2_score_strings)
         
         winner_string = {
-            "Blue": f"Blue team wins by {score_diff}!",
-            "Red": f"Red team wins by {score_diff}!",
+            "Blue": f"Blue team wins by {'{:,}'.format(score_diff)}!",
+            "Red": f"Red team wins by {'{:,}'.format(score_diff)}!",
             "Tie": "Tie!"
         }
         winner_color = {
@@ -198,10 +198,10 @@ async def get_individual_match_data(match_id, map, data=None):
             "Tie": 0x808080
         }
         embed_desc = (
-            f'**{winner_string}**\n\n'
-            f'__Blue Team__ ({team_1_score} points, {round(team_1_score/len(team_1_players),2)} average)'
+            f'**{winner_string[winner]}**\n\n'
+            f'__Blue Team__ ({"{:,}".format(team_1_score)} points, {"{:,}".format(round(team_1_score/len(team_1_players),2))} average)\n'
             f'{team_1_score_string}\n\n'
-            f'__Red Team__ ({team_2_score} points, {round(team_2_score/len(team_2_players),2)} average)'
+            f'__Red Team__ ({"{:,}".format(team_2_score)} points, {"{:,}".format(round(team_2_score/len(team_2_players),2))} average)\n'
             f'{team_2_score_string}'
         )
     else:
@@ -230,11 +230,11 @@ async def get_individual_match_data(match_id, map, data=None):
               f'{play_modes[game_data["play_mode"]]}')
 
     final = {
-        "match_name": match_data["match"]["match_id"],
+        "match_name": match_data["match"]["name"],
         "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
         "diff_id": game_data["beatmap_id"],
         "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
-        "map_thumbnail": f'https://b.ppy.sh/thumb/{game_data["beatmap_id"]}l.jpg',
+        "map_thumbnail": f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
         "map_name": f'{map_data["artist"]} - {map_data["title"]} [{map_data["version"]}]',
         "winner": winner,
         "score_difference": score_diff,
@@ -261,8 +261,14 @@ class MatchCommands(commands.Cog):
     async def getmatch(self, ctx, match, map=1):
         """Get score and statistics data for the nth map of a match."""
         data = await get_individual_match_data(match, map)
-        pprint.pprint(data)
-        await ctx.send("done...")
+        em_msg = discord.Embed(description=data["embed_description"],
+                               color=data["winner_color"],
+                               url=data["diff_url"],
+                               title=data["map_name"])
+        em_msg.set_thumbnail(url=data["map_thumbnail"])
+        em_msg.set_footer(text=data["footer"])
+        em_msg.set_author(name=data["match_name"],url=data["match_url"])
+        await ctx.send(embed=em_msg)
 
     @commands.command()
     async def trackmatch(self, ctx, match, map=1):
