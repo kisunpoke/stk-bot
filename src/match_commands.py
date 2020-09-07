@@ -48,16 +48,21 @@ class Mods(IntFlag):
         mod_list[0] = mod_list[0].split("Mods.")[1]
         return mod_list
 
-async def get_individual_match_data(match_id, map, data=None):
+async def get_individual_match_data(match_id, map, data=None, player_ids=None):
     #really this should be split up more...
     #intended for use with team vs
     #also has no clue if a player fails or not but since everything is NF it'll be ignored
     #also needs score threshhold to exclude refs (or abnormally low scores)
-    """Returns a dict of match data tailored for generating match embeds for `getmatch()`.
+    """Returns a dict of match data tailored for stat calculation.
     
     `data` is expected to be the original JSON response, and is used in lieu of 
     calling the osu! API. Otherwise, `match_id` is used to get match data, then the nth
-    `map` (zero-indexed) is obtained and statcrunched.
+    `map` (zero-indexed) is obtained and processed.
+
+    This function aims to expose useful data not normally available from the get_match
+    endpoint of the API.
+    **player_ids is not yet fully implemented!!**
+
     ```
     Returns the following dict:
     {
@@ -73,9 +78,6 @@ async def get_individual_match_data(match_id, map, data=None):
         "team_2_score": int, 
         "team_1_score_avg": float,
         "team_2_score_avg": float,
-        "embed_description": str (very, very long),
-        "footer": str,
-        "embed_color": hex (0x......)
         "individual_scores": [
             {
                 "user_id": str,
@@ -92,15 +94,20 @@ async def get_individual_match_data(match_id, map, data=None):
                     "miss_count": int
                 },
                 "team_contrib": float
+                "team": str
             }, ...
         ]
+        "start_time": str,
+        "scoring_type": str,
+        "team_type": str,
+        "play_mode": str
     }
     ```
     """
     match_data = data
     if not match_data:
         match_data = await osuapi.get_match_data(match_id)
-    game_data = match_data["games"][map]
+    game_data = match_data["games"][int(map)]
     map_data = await osuapi.get_map_data(game_data["beatmap_id"])
     #now we'll start number crunching and stuff
     
@@ -136,9 +143,6 @@ async def get_individual_match_data(match_id, map, data=None):
         #score diff
         score_diff = abs(team_1_score-team_2_score)
 
-        team_1_score_strings = []
-        team_2_score_strings = []
-
         individual_scores = []
         for player_score in game_data["scores"]:
             count_300 = int(player_score["count300"])
@@ -147,9 +151,8 @@ async def get_individual_match_data(match_id, map, data=None):
             count_miss = int(player_score["countmiss"])
             acc_count = count_300 + count_100 + count_50 + count_miss
             acc_value = (count_300+(count_100/3)+(count_50/6))/acc_count
-            accuracy = '{:.2%}'.format(acc_value)
-            score_val = "{:,}".format(int(player_score["score"]))
-            maxcombo = "{:,}".format(int(player_score["maxcombo"]))
+            score = int(player_score["score"])
+            contrib = score/team_1_score if player_score["team"] == "1" else score/team_2_score
             #so it occurred to me the logic here is flawed
             #there should be a player_id dict passed, None by default
             #but will fix later
@@ -158,22 +161,17 @@ async def get_individual_match_data(match_id, map, data=None):
                 if player_document == None:
                     #this means that we don't have this player saved for some reason
                     #so we'll go the alternative route, getting the username manually
+                    #this'll probably happen if somebody tries to get a non-tournament mp
                     player_data = await osuapi.get_player_data(player_score["user_id"])
                     player_name = player_data["username"]
                 else:
                     player_name = player_document["user_name"]
                 player_ids[player_score["user_id"]] = player_name
-            if player_score["team"] == "1":
-                contrib = int(player_score["score"])/team_1_score
-                team_1_score_strings.append(f'**{player_name}** - {score_val} ({maxcombo}x) ({accuracy} - {count_300}/{count_100}/{count_50}/{count_miss})')
-            elif player_score["team"] == "2":
-                contrib = int(player_score["score"])/team_2_score
-                team_2_score_strings.append((f'**{player_name}** - {score_val} ({maxcombo}x) ({accuracy} - {count_300}/{count_100}/{count_50}/{count_miss})'))
             individual_score = {
                 "user_id": player_score["user_id"],
                 "user_name": player_name,
-                "score": player_score["score"],
-                "combo": player_score["maxcombo"],
+                "score": score,
+                "combo": int(player_score["maxcombo"]),
                 "accuracy": acc_value,
                 "mod_val": int(game_data["mods"]),
                 "mods": Mods(int(game_data["mods"])).to_list(),
@@ -183,31 +181,83 @@ async def get_individual_match_data(match_id, map, data=None):
                     "50_count": count_50,
                     "miss_count": count_miss
                 },
-                "team_contrib": contrib
+                "team_contrib": contrib,
+                "team": player_score["team"]
             }
-        team_1_score_string = "\n".join(team_1_score_strings)
-        team_2_score_string = "\n".join(team_2_score_strings)
-        
-        winner_string = {
-            "Blue": f"Blue team wins by {'{:,}'.format(score_diff)}!",
-            "Red": f"Red team wins by {'{:,}'.format(score_diff)}!",
-            "Tie": "Tie!"
-        }
-        winner_color = {
-            "Blue": 0x0000FF,
-            "Red": 0xFF0000,
-            "Tie": 0x808080
-        }
-        embed_desc = (
-            f'**{winner_string[winner]}**\n\n'
-            f'__Blue Team__ ({"{:,}".format(team_1_score)} points, {"{:,}".format(round(team_1_score/len(team_1_players),2))} average)\n'
-            f'{team_1_score_string}\n\n'
-            f'__Red Team__ ({"{:,}".format(team_2_score)} points, {"{:,}".format(round(team_2_score/len(team_2_players),2))} average)\n'
-            f'{team_2_score_string}'
-        )
-    else:
-        #wheeze
-        raise ValueError("You are trying to process a non team-vs match; this isn't currently supported.")
+            individual_scores.append(individual_score)
+    final = {
+        "match_name": match_data["match"]["name"],
+        "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
+        "diff_id": game_data["beatmap_id"],
+        "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
+        "map_thumbnail": f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
+        "map_name": f'{map_data["artist"]} - {map_data["title"]} [{map_data["version"]}]',
+        "winner": winner,
+        "score_difference": score_diff,
+        "team_1_score": team_1_score,
+        "team_2_score": team_2_score, 
+        "team_1_score_avg": round(team_1_score/len(team_1_players),2),
+        "team_2_score_avg": round(team_2_score/len(team_2_players),2),
+        "individual_scores": individual_scores,
+        "start_time": game_data["start_time"],
+        "scoring_type": game_data["scoring_type"],
+        "team_type": game_data["team_type"],
+        "play_mode": game_data["play_mode"]
+    }
+    return final
+
+async def make_getmatch_embed(data):
+    """Generate the embed description and other components for a getmatch() command.
+    
+    As with its parent, remember that this currently does not support non team-vs.
+    `data` is expected to be the output of `get_individual_match_data()`.
+    The following `dict` is returned:
+    ```
+    {
+        "embed_description": str,
+        "footer": str,
+        "embed_color": int (as color hex),
+    }
+    ```
+    """
+    scores = data["individual_scores"]
+    team_1_score_strings = []
+    team_2_score_strings = []
+
+    for individual_score in scores:
+        #at first i thought doing this would make the actual score_string more readable
+        #now i'm not very sure
+        player_name = individual_score["user_name"]
+        score_val = individual_score["score"]
+        maxcombo = individual_score["combo"]
+        accuracy = individual_score["accuracy"]
+        count_300 = individual_score["hits"]["300_count"]
+        count_100 = individual_score["hits"]["100_count"]
+        count_50 = individual_score["hits"]["50_count"]
+        count_miss = individual_score["hits"]["miss_count"]
+        accuracy = '{:.2%}'.format(accuracy)
+        score_val = "{:,}".format(score_val)
+        maxcombo = "{:,}".format(maxcombo)
+        score_string = (f'**{player_name}** - {score_val} ({maxcombo}x) ({accuracy} - {count_300}/{count_100}/{count_50}/{count_miss})')
+        team_1_score_strings.append(score_string) if individual_score["team"] == "1" else team_2_score_strings.append(score_string)
+
+    team_1_score_string = "\n".join(team_1_score_strings)
+    team_2_score_string = "\n".join(team_2_score_strings)
+    
+    winner_string = {
+        "Blue": f"Blue team wins by {'{:,}'.format(data['score_difference'])}!",
+        "Red": f"Red team wins by {'{:,}'.format(data['score_difference'])}!",
+        "Tie": "Tie!"}
+    winner_color = {
+        "Blue": 0x0000FF,
+        "Red": 0xFF0000,
+        "Tie": 0x808080}
+    embed_desc = (
+        f'**{winner_string[data["winner"]]}**\n\n'
+        f'__Blue Team__ ({"{:,}".format(data["team_1_score"])} points, {"{:,}".format(data["team_1_score_avg"])} average)\n'
+        f'{team_1_score_string}\n\n'
+        f'__Red Team__ ({"{:,}".format(data["team_2_score"])} points, {"{:,}".format(data["team_2_score_avg"])} average)\n'
+        f'{team_2_score_string}')
 
     #footer stuff
     scoring_types = {
@@ -225,28 +275,15 @@ async def get_individual_match_data(match_id, map, data=None):
         '1': 'Taiko',
         '2': 'CTB',
         '3': 'osu!mania'}
-    embed_footer = (f'Played at {game_data["start_time"]} UTC | '
-              f'Win condition: {scoring_types[game_data["scoring_type"]]} | '
-              f'{team_types[game_data["team_type"]]} | '
-              f'{play_modes[game_data["play_mode"]]}')
+    embed_footer = (f'Played at {data["start_time"]} UTC | '
+                f'Win condition: {scoring_types[data["scoring_type"]]} | '
+                f'{team_types[data["team_type"]]} | '
+                f'{play_modes[data["play_mode"]]}')
 
     final = {
-        "match_name": match_data["match"]["name"],
-        "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
-        "diff_id": game_data["beatmap_id"],
-        "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
-        "map_thumbnail": f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
-        "map_name": f'{map_data["artist"]} - {map_data["title"]} [{map_data["version"]}]',
-        "winner": winner,
-        "score_difference": score_diff,
-        "team_1_score": team_1_score,
-        "team_2_score": team_2_score, 
-        "team_1_score_avg": round(team_1_score/len(team_1_players),2),
-        "team_2_score_avg": round(team_2_score/len(team_2_players),2),
-        "winner_color": winner_color[winner],
         "embed_description": embed_desc,
         "footer": embed_footer,
-        "individual_scores": individual_scores
+        "embed_color": winner_color[data["winner"]],
     }
     return final
 
@@ -264,12 +301,13 @@ class MatchCommands(commands.Cog):
         #need to check against mongodb if match has already been played
         if map is not None:
             data = await get_individual_match_data(match, map)
-            em_msg = discord.Embed(description=data["embed_description"],
-                                color=data["winner_color"],
+            embed_data = await make_getmatch_embed(data)
+            em_msg = discord.Embed(description=embed_data["embed_description"],
+                                color=embed_data["embed_color"],
                                 url=data["diff_url"],
                                 title=data["map_name"])
             em_msg.set_thumbnail(url=data["map_thumbnail"])
-            em_msg.set_footer(text=data["footer"])
+            em_msg.set_footer(text=embed_data["footer"])
             em_msg.set_author(name=data["match_name"],url=data["match_url"])
             await ctx.send(embed=em_msg)
         elif map == "list":
