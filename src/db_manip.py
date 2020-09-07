@@ -9,6 +9,7 @@ The cluster structure is as follows:
     -scores
         -test_pool: use for anything
         -<pool_name>: collection of `Score` documents
+        -<mp_id>: collection of `Match` documents
     -mappools
         -test_pool: use for anything
         -<pool_name>: collection of `Map` documents
@@ -62,6 +63,31 @@ The cluster structure is as follows:
     stage: string*
 }
 * - is not provided by osu! api and must be calculated here
+
+`Match` documents have the following fields:
+{
+    _id: str (mp_id; guaranteed to be unique),
+    scores: [<list of Score _id>],
+    blue_team_stats: {
+        average_accuracy: double
+        average_points: int (rounded)
+        average_difference: int (rounded)
+    },
+    red_team_stats: {
+        average_accuracy: double
+        average_points: int (rounded)
+        average_difference: int (rounded)
+    },
+    player_stats:{
+        <player_id>:{
+            username: str
+            team: str (1/2)
+            average_accuracy: double
+            average_points: int (rounded)
+            average_contrib: double
+        }, ...
+    }
+}
 
 `Map` documents have the following fields:
 {

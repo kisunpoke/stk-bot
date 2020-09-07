@@ -51,7 +51,8 @@ class Mods(IntFlag):
 async def get_individual_match_data(match_id, map, data=None):
     #really this should be split up more...
     #intended for use with team vs
-    #also has no clue if a player fails or not
+    #also has no clue if a player fails or not but since everything is NF it'll be ignored
+    #also needs score threshhold to exclude refs (or abnormally low scores)
     """Returns a dict of match data tailored for generating match embeds for `getmatch()`.
     
     `data` is expected to be the original JSON response, and is used in lieu of 
@@ -258,17 +259,49 @@ class MatchCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def getmatch(self, ctx, match, map=1):
-        """Get score and statistics data for the nth map of a match."""
-        data = await get_individual_match_data(match, map)
-        em_msg = discord.Embed(description=data["embed_description"],
-                               color=data["winner_color"],
-                               url=data["diff_url"],
-                               title=data["map_name"])
-        em_msg.set_thumbnail(url=data["map_thumbnail"])
-        em_msg.set_footer(text=data["footer"])
-        em_msg.set_author(name=data["match_name"],url=data["match_url"])
-        await ctx.send(embed=em_msg)
+    async def getmatch(self, ctx, match, map=None):
+        """Get score and statistics data for a match."""
+        #need to check against mongodb if match has already been played
+        if map is not None:
+            data = await get_individual_match_data(match, map)
+            em_msg = discord.Embed(description=data["embed_description"],
+                                color=data["winner_color"],
+                                url=data["diff_url"],
+                                title=data["map_name"])
+            em_msg.set_thumbnail(url=data["map_thumbnail"])
+            em_msg.set_footer(text=data["footer"])
+            em_msg.set_author(name=data["match_name"],url=data["match_url"])
+            await ctx.send(embed=em_msg)
+        elif map == "list":
+            #show the first 20 maps played
+            pass
+        else:
+            #show some match stats
+            '''
+            STK7: (Plastic Assimilation) vs. (Cherry Gum)
+            Blue Team | 4 - 5 | Red Team
+
+            **Match Statistics**    
+            Stat                      Blue Team        Red Team
+            Avg. Score
+            Avg. Accuracy
+            Avg. Score Difference
+
+            **Individual Statistics**
+            __Blue Team__
+            **Player** - 123,445 avg pts | 100.00% avg acc | 100.00% avg contrib
+            **Player** - 123,445 avg pts | 100.00% avg acc | 100.00% avg contrib
+
+            __Red Team__
+            **Player** - 123,445 avg pts | 100.00% avg acc | 100.00% avg contrib
+            **Player** - 123,445 avg pts | 100.00% avg acc | 100.00% avg contrib
+
+            footer:
+            Use `getmatch <mp_id> list` for a list of maps played or `getmatch <mp_id> <index>` for
+            individual map data!
+
+            '''
+            pass
 
     @commands.command()
     async def trackmatch(self, ctx, match, map=1):

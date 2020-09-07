@@ -38,6 +38,14 @@ class AdminConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
+    @commands.command()
+    async def updateconfig(self, ctx, setting, value):
+        pass
+
+    @commands.command()
+    async def listconfigs(self, ctx):
+        pass
+    
 class AdminDatabaseCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
