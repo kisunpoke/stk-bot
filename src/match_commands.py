@@ -287,12 +287,14 @@ async def make_getmatch_embed(data):
     }
     return final
 
-async def get_list_of_matches(match_id):
+async def make_matchlist_embed(data):
     """Returns a newline, numbered list of the first 20 matches played in a lobby."""
     pass
 
-async def process_match(match_id):
+async def make_matchstats_embed(data):
     pass
+    #get mongodb doc from match_id
+    #if not available, tell the user statistics on this match haven't been calculated
 
 class MatchCommands(commands.Cog):
     def __init__(self, bot):

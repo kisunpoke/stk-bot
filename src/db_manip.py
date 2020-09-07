@@ -93,6 +93,7 @@ The cluster structure is as follows:
 `Map` documents have the following fields:
 {
     _id: str (/b is guaranteed to be unique)
+    scores: [ObjectID, ObjectID, ...]
     pool_id: str
     map_type: str (of NM, HD, HR, etc)
     map_url: str
@@ -271,6 +272,7 @@ async def add_pools(pool_data):
         #we can do that elsewhere, not here
         map_document = {
             '_id': map[1],
+            'scores': [],
             'pool_id': map[3],
             'map_type': map[2],
             'map_url': f'https://osu.ppy.sh/b/{map[1]}',
@@ -378,6 +380,19 @@ async def add_scores(matches_data):
     - Updates the statistics of the teams and players involved.
     - Updates the statistics of the maps played.
     """
+    #so that feels like a lot, will split later as necessary
+
+    #For each match:
+    # - Get all score data via get_individual_match_info().
+    # - Generate associated `Score` documents, saving the _id.
+    # - Generate the associated `Match` document using data from the calls of get_individual_match_info().
+    # - Update mappool entry using the beatmap ID with the _ids of `Score` documents.
+    # - Insert docs. (or at whatever point feels correct)
+    # - During the above, save a list of all unique players seen.
+    # - Get the player docs for each of these players. (if a player can't be found, ignore them)
+    # - Update player docs with new stats.
+    # - Get a list of unique team docs from the players.
+    # - Update team docs with new stats.
     pass
 
 async def get_all_gsheet_data(sheet_id):
