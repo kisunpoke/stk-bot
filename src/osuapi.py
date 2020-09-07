@@ -29,7 +29,7 @@ async def get_map_data(diff_id):
     }
     return data
     '''
-    return map_data
+    return map_data[0]
 
 async def get_match_data(match_id):
     async with aiohttp.ClientSession() as session:

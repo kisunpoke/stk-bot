@@ -41,14 +41,19 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 bot.add_cog(team_commands.PlayerCommands(bot))
 bot.add_cog(team_commands.TeamCommands(bot))
 bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
+bot.add_cog(match_commands.MatchCommands(bot))
 
 @bot.event
 async def on_ready():
     print('ready!')
 
+'''
 @bot.event
 async def on_command_error(ctx, exception):
+    #check the exception type - command not found, params incorrect, runtime error, etc.
+    print(exception)
     await ctx.send(f"The following error occurred: {exception}")
+'''
 
 bot.run(token)
 
