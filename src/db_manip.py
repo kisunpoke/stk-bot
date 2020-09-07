@@ -41,7 +41,7 @@ The cluster structure is as follows:
 
 `Score` documents have the following fields:
 {
-    _id: string (maybe we'll not generate this and just let MongoDB do it)
+    _id: ObjectID (MongoDB generates this)
     user_id: string
     user_name: string*
     score: int
@@ -102,9 +102,17 @@ The cluster structure is as follows:
         map_song: str
         map_diff: str
         map_creator: str
-        star_rating: decimal
-        bpm: decimal
+        star_rating: double
+        bpm: double (or int)
         drain_time: int
+    }
+    stats:{
+        picks: int
+        bans: int
+        total_scores: int
+        average_score: double
+        average_acc: double
+        one_mils: int
     }
 }
 
@@ -113,6 +121,7 @@ The cluster structure is as follows:
     _id: string (of user id; guaranteed to be unique)
     user_name: string
     team_name: string
+    pfp_url: str
     scores: [str, str, ...] (list of `Score` _id)
     cached:{**
         average_acc: double
@@ -130,8 +139,6 @@ The cluster structure is as follows:
             50_count: int
             miss_count: int
         }
-        1_miss_plays: int
-        pfp_url: str
     }
 }
 
@@ -276,6 +283,14 @@ async def add_pools(pool_data):
                 'star_rating': map_data["difficultyrating"],
                 'bpm': map_data["bpm"],
                 'drain_time': map_data["total_length"],
+            },
+            'stats':{
+                'picks': 0,
+                'bans': 0,
+                'total_scores': 0,
+                'average_score': 0.0,
+                'average_acc': 0.0,
+                'one_mils': 0
             }
         }
         current_pool_docs.append(map_document)
@@ -283,7 +298,6 @@ async def add_pools(pool_data):
     #add metadata docs
     meta_collection = db['meta']
     await meta_collection.insert_many(meta_docs)
-
 
 async def add_players_and_teams(player_data):
     """Update the `tournament_data` database from `player_data`.
@@ -332,6 +346,7 @@ async def add_players_and_teams(player_data):
                 "_id": player_id,
                 'user_name': player_data[player_index]['username'],
                 'team_name': team[0],
+                'pfp_url': f"https://a.ppy.sh/{player_id}",
                 'scores': [],
                 'cached':{
                     'average_acc': 0,
@@ -356,7 +371,13 @@ async def add_players_and_teams(player_data):
     await team_collection.insert_many(team_documents)
 
 async def add_scores(matches_data):
-    """"""
+    """Update literally everything related to scores.
+    
+    This function:
+    - Adds both `Match` and `Score` documents to the `scores` database.
+    - Updates the statistics of the teams and players involved.
+    - Updates the statistics of the maps played.
+    """
     pass
 
 async def get_all_gsheet_data(sheet_id):
