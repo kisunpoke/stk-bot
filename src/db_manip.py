@@ -384,7 +384,8 @@ async def add_scores(matches_data):
 
     #For each match:
     # - Get all score data via get_individual_match_info().
-    # - Generate associated `Score` documents, saving the _id.
+    # - Get pool meta document and collection based on shorthand pool notation.
+    # - Generate associated `Score` documents, saving the _id. Ignore if score is below minimum threshold or if map is not in the specified mappool.
     # - Generate the associated `Match` document using data from the calls of get_individual_match_info().
     # - Update mappool entry using the beatmap ID with the _ids of `Score` documents.
     # - Insert docs. (or at whatever point feels correct)
