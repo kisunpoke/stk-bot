@@ -291,6 +291,9 @@ async def get_list_of_matches(match_id):
     """Returns a newline, numbered list of the first 20 matches played in a lobby."""
     pass
 
+async def process_match(match_id):
+    pass
+
 class MatchCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

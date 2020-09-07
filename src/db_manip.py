@@ -14,8 +14,9 @@ The cluster structure is as follows:
         -test_pool: use for anything
         -<pool_name>: collection of `Map` documents
         -meta: collection of {
-            _id: pool_name_short as str
+            _id: str (shortened pool name; unique)
             long_name: str
+            diff_ids: [str, str, ...]
         } documents
     -players_and_teams
         -players: collection of `Player` documents
@@ -220,36 +221,45 @@ async def add_pools(pool_data):
     - `pool_id` is the unique mod+id for this mappool, such as `NM1`.
     """
     db = client['mappools']
+
+    meta_docs = []
     
-    current_collection = None
+    current_pool_collection = None
     current_pool_docs = []
-    current_pool_collection = ""
+    current_pool_ids = []
+    current_metadata = []
     for map in pool_data:
         if map[0] != '':
             #this signifies that we are on a new mappool
-            #so we now insert all of the existing documents
+            #so we now insert/generate all of the existing documents
             #don't do unless a pool is currently being created
             if current_pool_collection:
-                pool_collection = db[current_pool_collection]
-                await pool_collection.insert_many(current_pool_docs)
-            #we expect the first map to always have an identifier
-            collection = db['meta']
-            pool_meta = map[0].split(", ")
-            pool_long = pool_meta[0]
-            pool_short = pool_meta[1]
+                await current_pool_collection.insert_many(current_pool_docs)
+                #now we add the previous pool's metadata
+                pool_long = current_metadata[0] #ex. Round of 32
+                pool_short = current_metadata[1] #ex. Ro32
 
-            document = {
-                "_id": pool_short,
-                "long_name": pool_long
-            }
-            await collection.insert_one(document)
-
-            current_pool_collection = pool_short
-            current_collection = db[pool_short]
+                meta_document = {
+                    "_id": pool_short,
+                    "long_name": pool_long,
+                    "diff_ids": current_pool_ids
+                }
+                meta_docs.append(meta_document)
+            
+            #the last "map" in a bulk add should always be ["END", ...]
+            #otherwise the the last pool will not be added
+            if map[0] == "END":
+                break
+            else:
+                #generate the metadata of this new pool and set the new pool collection
+                current_metadata = map[0].split(", ")
+                current_pool_collection = db[current_metadata[1]]
+                #reset doc and id lists 
+                current_pool_docs = []
+                current_pool_ids = []
         #get and process map data
         map_data = await osuapi.get_map_data(map[1])
         #print(map_data)
-        map_data = map_data[0]
         #note how we do not make any additional calculations to bpm or drain time
         #we can do that elsewhere, not here
         map_document = {
@@ -269,9 +279,11 @@ async def add_pools(pool_data):
             }
         }
         current_pool_docs.append(map_document)
-    #add the remaining maps
-    pool_collection = db[current_pool_collection]
-    await pool_collection.insert_many(current_pool_docs)
+        current_pool_ids.append(map[1])
+    #add metadata docs
+    meta_collection = db['meta']
+    await meta_collection.insert_many(meta_docs)
+
 
 async def add_players_and_teams(player_data):
     """Update the `tournament_data` database from `player_data`.
