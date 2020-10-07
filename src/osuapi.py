@@ -97,8 +97,8 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
     This function aims to expose useful data not normally available from the get_match
     endpoint of the API.
 
-    ```
     Returns the following dict:
+    ```
     {
         "match_name": str,
         "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
@@ -121,6 +121,7 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
                 "accuracy": float,
                 "mod_val": int,
                 "mods": [str, str, ...],
+                "pass": str, #"0" or "1", where "0" is fail
                 "hits": {
                     "300_count": int,
                     "100_count": int,
@@ -218,6 +219,7 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
                 "accuracy": acc_value,
                 "mod_val": int(game_data["mods"]),
                 "mods": Mods(int(game_data["mods"])).to_list(),
+                "pass": player_score["pass"],
                 "hits": {
                     "300_count": count_300,
                     "100_count": count_100,
