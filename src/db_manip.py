@@ -479,6 +479,11 @@ async def add_scores(matches_data):
                 #but this is more useful
                 id = f"{score['user_id']}-{match[0]}-{index}"
 
+                winner_dict = {
+                    "Blue": "1",
+                    "Red": "2"
+                }
+
                 #generate score document
                 score_document = {
                     "_id": id,
@@ -496,7 +501,7 @@ async def add_scores(matches_data):
                         "miss_count": score["hits"]["miss_count"]
                     },
                     "team_total": processed["team_1_score"] if score["team"] == "1" else processed["team_2_score"],
-                    "score_difference": processed["score_difference"] if processed["winner"] == score["team"] else -(processed["score_difference"]),
+                    "score_difference": processed["score_difference"] if winner_dict[processed["winner"]] == score["team"] else -(processed["score_difference"]),
                     "diff_id": processed["diff_id"],
                     "match_id": processed["match_id"],
                     "match_name": processed["match_name"],
