@@ -48,20 +48,21 @@ class Mods(IntFlag):
         mod_list[0] = mod_list[0].split("Mods.")[1]
         return mod_list
 
-async def get_individual_match_data(match_id, map, data=None, player_ids=None):
+async def get_individual_match_data(match_id, map, data=None, player_ids={}):
     #really this should be split up more...
     #intended for use with team vs
     #also has no clue if a player fails or not but since everything is NF it'll be ignored
     #also needs score threshhold to exclude refs (or abnormally low scores)
     """Returns a dict of match data tailored for stat calculation.
     
-    `data` is expected to be the original JSON response, and is used in lieu of 
-    calling the osu! API. Otherwise, `match_id` is used to get match data, then the nth
-    `map` (zero-indexed) is obtained and processed.
+    `data` is expected to be the original JSON response, and is used in lieu of calling
+    the osu! API - helpful if successive calls of this function for the same match occur. 
+    Otherwise, `match_id` is used to get match data, then the nth `map` (zero-indexed) is 
+    obtained and processed. If available, `player_ids` should be provided, a dict of `player_ids`
+    (str) to `player_names` (str).
 
     This function aims to expose useful data not normally available from the get_match
     endpoint of the API.
-    **player_ids is not yet fully implemented!!**
 
     ```
     Returns the following dict:
@@ -72,7 +73,7 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
         "diff_url": f'https://osu.ppy.sh/b/{diff_id}',
         "map_thumbnail": f'https://b.ppy.sh/thumb/{diff_id}l.jpg',
         "map_name": f'{artist} - {title}',
-        "winner": str (1 or 2),
+        "winner": str, #(1 or 2)
         "score_difference": float,
         "team_1_score": int,
         "team_2_score": int, 
@@ -111,14 +112,20 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
     map_data = await osuapi.get_map_data(game_data["beatmap_id"])
     #now we'll start number crunching and stuff
     
-    #determine who belongs in what team, assuming a team mode is selected
+    #if head-to-head or tag co-op is selected
+    if game_data['team_type'] in ('0', '1'):
+        #currently unsupported!
+        pass
+
+    #if a team mode is selected
     if game_data['team_type'] in ('2', '3'):
-        #does this dict even do anything
-        player_ids = {}
+        #determine who belongs in what team
+        #as of now this is only used to get the number of players on a team, since we use
+        #a conditional to add teams to the correct field anyways
         team_1_players = []
         team_2_players = []
         for index, player_score in enumerate(game_data['scores']):
-            player_ids[player_score["user_id"]] = ""
+            #player_ids[player_score["user_id"]] = ""
             if player_score["team"] == "1":
                 team_1_players.append(player_score["user_id"])
             if player_score["team"] == "2":
@@ -127,7 +134,6 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
         team_1_score = 0
         team_2_score = 0
         for player_score in game_data["scores"]:
-            #i actually spent a solid hour wondering why this wasn't working cuz i used 1 instead of "1"
             if player_score["team"] == "1":
                 #print(f'Adding {int(player_score["score"])} to team 1\'s score {team_1_score}')
                 team_1_score += int(player_score["score"])
@@ -143,6 +149,7 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
         #score diff
         score_diff = abs(team_1_score-team_2_score)
 
+        #generate the individual lines that will be in the discord embed
         individual_scores = []
         for player_score in game_data["scores"]:
             count_300 = int(player_score["count300"])
@@ -153,9 +160,13 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
             acc_value = (count_300+(count_100/3)+(count_50/6))/acc_count
             score = int(player_score["score"])
             contrib = score/team_1_score if player_score["team"] == "1" else score/team_2_score
-            #so it occurred to me the logic here is flawed
+            
+            #so it occurred to me the logic below is flawed
             #there should be a player_id dict passed, None by default
             #but will fix later
+
+            #if we don't currently know what the name of a certain player id is, look it up against the mongodb and osuapi, in that order
+            #might fail if the player is restricted, not sure on that
             if not player_ids[player_score["user_id"]]:
                 player_document = await (db_manip.getval("id", player_score["user_id"], "players_and_teams", "players"))
                 if player_document == None:
@@ -185,26 +196,26 @@ async def get_individual_match_data(match_id, map, data=None, player_ids=None):
                 "team": player_score["team"]
             }
             individual_scores.append(individual_score)
-    final = {
-        "match_name": match_data["match"]["name"],
-        "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
-        "diff_id": game_data["beatmap_id"],
-        "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
-        "map_thumbnail": f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
-        "map_name": f'{map_data["artist"]} - {map_data["title"]} [{map_data["version"]}]',
-        "winner": winner,
-        "score_difference": score_diff,
-        "team_1_score": team_1_score,
-        "team_2_score": team_2_score, 
-        "team_1_score_avg": round(team_1_score/len(team_1_players),2),
-        "team_2_score_avg": round(team_2_score/len(team_2_players),2),
-        "individual_scores": individual_scores,
-        "start_time": game_data["start_time"],
-        "scoring_type": game_data["scoring_type"],
-        "team_type": game_data["team_type"],
-        "play_mode": game_data["play_mode"]
-    }
-    return final
+        team_vs_final = {
+            "match_name": match_data["match"]["name"],
+            "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
+            "diff_id": game_data["beatmap_id"],
+            "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
+            "map_thumbnail": f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
+            "map_name": f'{map_data["artist"]} - {map_data["title"]} [{map_data["version"]}]',
+            "winner": winner,
+            "score_difference": score_diff,
+            "team_1_score": team_1_score,
+            "team_2_score": team_2_score, 
+            "team_1_score_avg": round(team_1_score/len(team_1_players),2),
+            "team_2_score_avg": round(team_2_score/len(team_2_players),2),
+            "individual_scores": individual_scores,
+            "start_time": game_data["start_time"],
+            "scoring_type": game_data["scoring_type"],
+            "team_type": game_data["team_type"],
+            "play_mode": game_data["play_mode"]
+        }
+        return team_vs_final
 
 async def make_getmatch_embed(data):
     """Generate the embed description and other components for a getmatch() command.
@@ -292,6 +303,10 @@ async def make_matchlist_embed(data):
     pass
 
 async def make_matchstats_embed(data):
+    """Generate the embed for the general match statistics of a match.
+    
+    Uses MongoDB calls.
+    """
     pass
     #get mongodb doc from match_id
     #if not available, tell the user statistics on this match haven't been calculated
@@ -352,11 +367,16 @@ class MatchCommands(commands.Cog):
         pass
 
     @commands.command()
-    async def addmatch(self, ctx, match):
+    async def addmatch(self, ctx, match, pool_id, stage, referee_id=None):
         """Add this match to the database and update all relevant data.
 
-        This includes calls to update player and mappool data.
+        This includes calls to update player and mappool data, as well as confirmation.
         """
+        #get match data via osuapi
+        #get list of maps from mappool meta doc based on pool_id
+        #return list of matches that used a map from the specified pool_id
+        #generate a confirmation embed
+        #actually execute db_manip funct
         pass
 
     @commands.command()

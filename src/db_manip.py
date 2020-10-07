@@ -41,6 +41,8 @@ The cluster structure is as follows:
 
 `Score` documents have the following fields:
 {
+    _id: string = player_id-mp_id-mp_index
+    OR
     _id: ObjectID (MongoDB generates this)
     user_id: string
     user_name: string*
@@ -60,10 +62,10 @@ The cluster structure is as follows:
     map_id: string (int, not pool-map format)
     match_id: string
     match_name: string
+    match_index: string
     pool: string*
     stage: string*
 }
-* - is not provided by osu! api and must be calculated here
 
 `Match` documents have the following fields:
 {
@@ -161,8 +163,8 @@ The cluster structure is as follows:
 i don't know if i want to actually use these fields or just calcuate them as needed
 will probably drop them if/when i decide the usage of this bot will probably be low enough
 
-note that numbers that should not have numerical calculations performed
-on them is a string, not an int as the data might suggest
+note that numbers that should not have numerical calculations performed on them are strings, 
+not ints/floats as the data might suggest; this will hopefully improve clarity
 """
 import motor.motor_asyncio
 import pprint
@@ -201,7 +203,6 @@ async def deleteval(key, value, db='test', collection='test-data'):
     print(result)
 
 #move to util, maybe?
-#see https://stackoverflow.com/questions/38758668/grouping-functions-by-using-classes-in-python
 async def add_meta(meta_data):
     """"""
     db = client['tournament_data']
@@ -304,17 +305,21 @@ async def add_pools(pool_data):
 async def add_players_and_teams(player_data):
     """Update the `tournament_data` database from `player_data`.
     
-    *This function is not intended for updating existing players.*\n
+    *This function is not intended for updating existing players.*
+
     `player_data` is a list of teams and either player names or player IDs.
     Because the osu! API will automatically attempt to determine if the entered value
     is an ID or a username, there is no need to have validation or maintain
     a strict format. However, purely-numerical names may be more difficult to
     deal with.
-    The list is in the format `[team_name, player_1, player_2, ...]`, all `str`.
+    The list is in the format `[[team_name, player_1, player_2, ...], [...], ...]`, all `str`.
     - `team_name` is a str of the team name. It is used as an _id and thus must be
     unique (as it should be).
     - `player_<n>` is a player associated with `team_name`. An individual document
-    for each player is created in the `players` collection."""
+    for each player is created in the `players` collection.
+    
+    Note that players and teams are initialized with some cached statistics, like average score
+    and acc, set to zero."""
     db = client['players_and_teams']
     team_collection = db['teams']
     player_collection = db['players']
@@ -397,7 +402,7 @@ async def add_scores(matches_data):
     pass
 
 async def get_all_gsheet_data(sheet_id):
-    #this WILL block the bot during execution
+    #this will (should?) block the bot during execution
     #however, this is desired as we don't want other things to happen while we're doing this
     import pickle
     import os.path
