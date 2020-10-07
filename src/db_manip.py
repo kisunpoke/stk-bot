@@ -171,6 +171,8 @@ import pprint
 
 import osuapi
 
+import match_commands
+
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
 #and https://stackoverflow.com/questions/57159663/mongodb-get-element-in-the-middle-of-a-find-sort-result-using-nodejs-native-driv
@@ -203,6 +205,9 @@ async def deleteval(key, value, db='test', collection='test-data'):
     print(result)
 
 #move to util, maybe?
+
+
+
 async def add_meta(meta_data):
     """"""
     db = client['tournament_data']
@@ -465,6 +470,7 @@ async def get_all_gsheet_data(sheet_id):
 async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
     databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
+    #total number of steps because i'm lazy
     steps = 5
     await ctx.send(f"dropping databases... (1/{steps})")
     for database in databases:
