@@ -6,7 +6,7 @@ The cluster structure is as follows:
 -stk-cluster
     -test
         -test_data: use for anything
-    -scores
+    -matches_and_scores
         -scores: collection of `Score` documents
         -matches: collection of `Match` documents
     -mappools
@@ -169,6 +169,7 @@ not ints/floats as the data might suggest; this will hopefully improve clarity
 """
 import motor.motor_asyncio
 import pprint
+import collections
 
 import osuapi
 
@@ -217,6 +218,20 @@ async def determine_pool(map_id):
     for meta_document in await cursor.to_list(length=100):
         if map_id in meta_document["diff_ids"]:
             return meta_document["_id"]
+    return None
+
+async def determine_team(user_id):
+    """Figure out what team this `user_id` belongs in.
+    
+    Returns the full name of the team, equivalent to its `_id` in 
+    the `teams` collection of the `players_and_teams` database."""
+    db = client["players_and_teams"]
+    collection = db["teams"]
+    cursor = collection.find()
+    #200 teams seems reasonable i assume
+    for team_document in await cursor.to_list(length=200):
+        if user_id in team_document["players"]:
+            return team_document["_id"]
     return None
 
 async def add_meta(meta_data):
@@ -350,7 +365,7 @@ async def add_players_and_teams(player_data):
         player_ids = [player['user_id'] for player in player_data]
         team_document = {
             '_id': team[0],
-            'players': players,
+            'players': player_ids,
             'cached':{
                 'average_acc': 0.00,
                 'acc_rank': 0,
@@ -432,23 +447,29 @@ async def add_scores(matches_data):
 
     #to be batch uploaded upon completion
     score_documents = []
-    match_documents = []
+    #{"mp_id": [score_document, ...], ...}
+    # no need to be a defaultdict since all valid docs are added at once
+    matches_documents = {}
     #{"team_name": [score_document, ...], ...}
-    team_documents = {}
+    team_documents = collections.defaultdict(list)
     #{"player_id": [score_document, ...], ...}
-    player_documents = {}
+    player_documents = collections.defaultdict(list)
     #{"diff_id": [score_document, ...], ...}
-    map_documents = {}
+    map_documents = collections.defaultdict(list)
     for match in matches_data:
         api_match_data = await osuapi.get_match_data(match[0])
+        if not api_match_data['games']:
+            continue
 
-        match_score_ids = []
+        match_documents = []
 
         for index, game_data in enumerate(api_match_data["games"]):
             #ignore the first n maps as specified by the match data
             if index <= int(match[5]):
                 continue
-            processed = await osuapi.process_match_data(match[0], index, api_match_data, player_id_cache)
+            processed = await osuapi.process_match_data(match[0], index, data=api_match_data, player_ids=player_id_cache)
+            if processed == None:
+                continue
             player_id_cache = processed["player_ids"]
             pool_name = await determine_pool(processed["diff_id"])
             #oh my god the function complexity lol
@@ -484,16 +505,56 @@ async def add_scores(matches_data):
                     "stage": match[3]
                 }
 
-async def update_player_stats():
-    pass
+                score_documents.append(score_document)
+                match_documents.append(score_document)
 
-async def update_team_stats():
-    pass
+                player_documents[score['user_id']].append(score_document)
+                team_documents[score['team_name']].append(score_document)
+                map_documents[processed['diff_id']].append(score_document)
+        '''
+        import pprint
+        print(f"for id {match[0]}:")
+        pprint.pprint(api_match_data)
+        print(api_match_data["match"])
+        print(api_match_data["match"]["match_id"])
+        print(match[0])
+        '''
+        matches_documents[match[0]] = match_documents
+    '''
+    import pprint
+    pprint.pprint(matches_documents)
+    pprint.pprint(team_documents)
+    '''
 
-async def update_map_stats():
-    pass
+    score_db = client["matches_and_scores"]
+    score_collection = score_db["scores"]
+    await score_collection.insert_many(score_documents)    
+
+    await update_player_stats(player_documents)
+    await update_team_stats(team_documents)
+    await update_match_stats(matches_documents)
+    await update_map_stats(map_documents)
 
 
+async def update_player_stats(player_dict):
+    print("player_dict:")
+    for player in player_dict:
+        print(player)
+
+async def update_team_stats(team_dict):
+    print("team_dict:")
+    for team in team_dict:
+        print(team)
+
+async def update_map_stats(map_dict):
+    print("map_dict:")
+    for map in map_dict:
+        print(map)
+
+async def update_match_stats(match_dict):
+    print("match_dict:")
+    for match in match_dict:
+        print(match)
 
 async def get_all_gsheet_data(sheet_id):
     #this will (should?) block the bot during execution
@@ -560,7 +621,7 @@ async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
     databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
     #total number of steps because i'm lazy
-    steps = 5
+    steps = 6
     await ctx.send(f"dropping databases... (1/{steps})")
     for database in databases:
         await client.drop_database(database)
@@ -573,3 +634,6 @@ async def rebuild_all(sheet_id, ctx):
     await add_pools(data['pools'])
     await ctx.send(f"building team and player db (5/{steps})")
     await add_players_and_teams(data['teams'])
+    await ctx.send(f"building scores (6/{steps}) - this will take a while")
+    await add_scores(data['matches'])
+    await ctx.send("done!!")

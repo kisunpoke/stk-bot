@@ -130,8 +130,9 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                     "50_count": int,
                     "miss_count": int
                 },
-                "team_contrib": float
-                "team": str
+                "team_contrib": float,
+                "team": str #1 or 2,
+                "team_name": str #equivalent to the _id of a Team document
             }, ...
         ]
         "start_time": str,
@@ -146,6 +147,9 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     if not match_data:
         match_data = await get_match_data(match_id)
     game_data = match_data["games"][int(map)]
+    #stop execution here if no scores are available for some reason
+    if not game_data['scores']:
+        return None
     map_data = await get_map_data(game_data["beatmap_id"])
     #now we'll start number crunching and stuff
     
@@ -200,9 +204,11 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
             
             #if we don't currently know what the name of a certain player id is, look it up against the mongodb and osuapi, in that order
             #might fail if the player is restricted, not sure on that
-            if not player_ids[player_score["user_id"]]:
+            try:
+                player_name = player_ids[player_score["user_id"]]
+            except:
                 print(f"Hit MongoDB for player ID {player_score['user_id']}")
-                player_document = await (db_manip.getval("id", player_score["user_id"], "players_and_teams", "players"))
+                player_document = await (db_manip.getval("_id", player_score["user_id"], "players_and_teams", "players"))
                 if player_document == None:
                     #this means that we don't have this player saved for some reason
                     #so we'll go the alternative route, getting the username manually
@@ -230,10 +236,13 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                     "miss_count": count_miss
                 },
                 "team_contrib": contrib,
-                "team": player_score["team"]
+                "team": player_score["team"],
+                "team_name": await db_manip.determine_team(player_score["user_id"])
             }
             individual_scores.append(individual_score)
-        print(player_ids)
+        #import pprint
+        #pprint.pprint(match_data)
+        #pprint.pprint(game_data)
         team_vs_final = {
             "match_name": match_data["match"]["name"],
             "match_id": match_id,
@@ -246,8 +255,8 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
             "score_difference": score_diff,
             "team_1_score": team_1_score,
             "team_2_score": team_2_score, 
-            "team_1_score_avg": round(team_1_score/len(team_1_players),2),
-            "team_2_score_avg": round(team_2_score/len(team_2_players),2),
+            "team_1_score_avg": round(team_1_score/len(team_1_players),2) if len(team_1_players) != 0 else 0,
+            "team_2_score_avg": round(team_2_score/len(team_2_players),2) if len(team_2_players) != 0 else 0,
             "individual_scores": individual_scores,
             "start_time": game_data["start_time"],
             "scoring_type": game_data["scoring_type"],

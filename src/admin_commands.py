@@ -76,7 +76,6 @@ class AdminDatabaseCommands(commands.Cog):
             if await confirmation_dialog(self.bot, ctx, "Rebuild all?"):
                 await ctx.send("ok, processing")
                 await db_manip.rebuild_all(sheet_id, ctx)
-                await ctx.send("done")
         else:
             #now actually make the list; ids should be a hyperlink
             await ctx.send("here's a hardcoded list of gsheet ids")
