@@ -11,7 +11,9 @@ import db_manip
 api_key = open("osukey").read()
 
 class Mods(IntFlag):
-    "Enum of the osu! mods exposed by the API."
+    """Enum of the osu! mods exposed by the API.
+    
+    Underscores used for n-key mods because variable naming restrictions."""
     NM = 0,
     NF = 1,
     EZ = 2,
