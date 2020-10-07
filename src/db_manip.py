@@ -624,7 +624,7 @@ async def get_all_gsheet_data(sheet_id):
 
 async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
-    databases = ['scores', 'mappools', 'players_and_teams', 'tournament_data']
+    databases = ['mappools', 'players_and_teams', 'tournament_data', 'matches_and_scores']
     #total number of steps because i'm lazy
     steps = 6
     await ctx.send(f"dropping databases... (1/{steps})")
