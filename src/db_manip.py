@@ -7,9 +7,8 @@ The cluster structure is as follows:
     -test
         -test_data: use for anything
     -scores
-        -test_pool: use for anything
-        -<pool_name>: collection of `Score` documents
-        -<mp_id>: collection of `Match` documents
+        -scores: collection of `Score` documents
+        -matches: collection of `Match` documents
     -mappools
         -test_pool: use for anything
         -<pool_name>: collection of `Map` documents
@@ -41,36 +40,38 @@ The cluster structure is as follows:
 
 `Score` documents have the following fields:
 {
-    _id: string = player_id-mp_id-mp_index
-    OR
-    _id: ObjectID (MongoDB generates this)
-    user_id: string
-    user_name: string*
-    score: int
-    combo: int
-    accuracy: double*
-    mod_val: int
-    mods: [str, str, ...]*
+    #osu does generate its own game id for each map in a match, but the below is more
+    #usable for this bot
+    _id: string = player_id-mp_id-mp_index,
+    user_id: string,
+    user_name: string*,
+    score: int,
+    combo: int,
+    accuracy: double*,
+    mod_val: int,
+    mods: [str, str, ...]*,
     hits: {
-        300_count: int
-        100_count: int
-        50_count: int
-        miss_count: int
-    }
-    team_total: int*
-    score_difference: int*
-    map_id: string (int, not pool-map format)
-    match_id: string
-    match_name: string
-    match_index: string
-    pool: string*
-    stage: string*
+        300_count: int,
+        100_count: int,
+        50_count: int,
+        miss_count: int,
+    },
+    team_total: int*,
+    score_difference: int*,
+    diff_id: string (int, not pool-map format),
+    match_id: string,
+    match_name: string,
+    match_index: string,
+    pool: string*,
+    stage: string*,
 }
 
 `Match` documents have the following fields:
 {
     _id: str (mp_id; guaranteed to be unique),
-    scores: [<list of Score _id>],
+    ref_name: str,
+    ref_id: str,
+    scores: [str, str, ...], #Score document _id's
     blue_team_stats: {
         average_accuracy: double
         average_points: int (rounded)
@@ -95,7 +96,7 @@ The cluster structure is as follows:
 `Map` documents have the following fields:
 {
     _id: str (/b is guaranteed to be unique)
-    scores: [ObjectID, ObjectID, ...]
+    scores: [str, str, ...] #Score document _id's
     pool_id: str
     map_type: str (of NM, HD, HR, etc)
     map_url: str
@@ -171,8 +172,6 @@ import pprint
 
 import osuapi
 
-import match_commands
-
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
 #and https://stackoverflow.com/questions/57159663/mongodb-get-element-in-the-middle-of-a-find-sort-result-using-nodejs-native-driv
@@ -206,7 +205,19 @@ async def deleteval(key, value, db='test', collection='test-data'):
 
 #move to util, maybe?
 
-
+async def determine_pool(map_id):
+    """Figure out what pool this `map_id` belongs in.
+    
+    Returns shorthand pool notation, equivalent to the collection name in 
+    the `mappools` database."""
+    db = client["mappools"]
+    collection = db["meta"]
+    cursor = collection.find()
+    #well i'd hope we never end up with 100 pools
+    for meta_document in await cursor.to_list(length=100):
+        if map_id in meta_document["diff_ids"]:
+            return meta_document["_id"]
+    return None
 
 async def add_meta(meta_data):
     """"""
@@ -389,6 +400,19 @@ async def add_scores(matches_data):
     - Adds both `Match` and `Score` documents to the `scores` database.
     - Updates the statistics of the teams and players involved.
     - Updates the statistics of the maps played.
+    (at least partially by calling more functions)
+
+    Takes the list `matches_data`, which is expected to be in the format
+    `[match_id, referee_id, referee_name, stage, bans, ignore_to_index]`.
+    - `match_id` is the MP id of the match.
+    - `referee_id` is the referee's user ID. This can be used to ignore
+    the referee's scores in a match.
+    - `referee_name` is the referee's username.
+    - `stage` is the formal stage of that match, as in "Round of 32" or
+    "Loser's Bracket Finals."
+    - `bans` is a `str` of comma-separated map ids.
+    - `ignore_to_index` is the index of the last map to be ignored, with
+    all maps before it ignroed as well.
     """
     #so that feels like a lot, will split later as necessary
 
@@ -404,7 +428,72 @@ async def add_scores(matches_data):
     # - Update player docs with new stats.
     # - Get a list of unique team docs from the players.
     # - Update team docs with new stats.
+    player_id_cache = {} #we use one global cache for this entire process
+
+    #to be batch uploaded upon completion
+    score_documents = []
+    match_documents = []
+    #{"team_name": [score_document, ...], ...}
+    team_documents = {}
+    #{"player_id": [score_document, ...], ...}
+    player_documents = {}
+    #{"diff_id": [score_document, ...], ...}
+    map_documents = {}
+    for match in matches_data:
+        api_match_data = await osuapi.get_match_data(match[0])
+
+        match_score_ids = []
+
+        for index, game_data in enumerate(api_match_data["games"]):
+            #ignore the first n maps as specified by the match data
+            if index <= int(match[5]):
+                continue
+            processed = await osuapi.process_match_data(match[0], index, api_match_data, player_id_cache)
+            player_id_cache = processed["player_ids"]
+            pool_name = await determine_pool(processed["diff_id"])
+            #oh my god the function complexity lol
+            for score in processed["individual_scores"]:
+                #this format is theoretically always unique and can yield score information in itself
+                #we could also use the game id given by the osu api for each map in a match,
+                #but this is more useful
+                id = f"{score['user_id']}-{match[0]}-{index}"
+
+                #generate score document
+                score_document = {
+                    "_id": id,
+                    "user_id": score["user_id"],
+                    "user_name": score["user_name"],
+                    "score": score["score"],
+                    "combo": score["combo"],
+                    "accuracy": score["accuracy"],
+                    "mod_val": score["mod_val"],
+                    "mods": score["mods"],
+                    "hits": {
+                        "300_count": score["hits"]["300_count"],
+                        "100_count": score["hits"]["100_count"],
+                        "50_count": score["hits"]["50_count"],
+                        "miss_count": score["hits"]["miss_count"]
+                    },
+                    "team_total": processed["team_1_score"] if score["team"] == "1" else processed["team_2_score"],
+                    "score_difference": processed["score_difference"] if processed["winner"] == score["team"] else -(processed["score_difference"]),
+                    "diff_id": processed["diff_id"],
+                    "match_id": processed["match_id"],
+                    "match_name": processed["match_name"],
+                    "match_index": index,
+                    "pool": pool_name,
+                    "stage": match[3]
+                }
+
+async def update_player_stats():
     pass
+
+async def update_team_stats():
+    pass
+
+async def update_map_stats():
+    pass
+
+
 
 async def get_all_gsheet_data(sheet_id):
     #this will (should?) block the bot during execution
@@ -446,7 +535,7 @@ async def get_all_gsheet_data(sheet_id):
 
     ranges = {
         'meta': 'meta!A2:B',
-        'matches': 'matches!A2:E',
+        'matches': 'matches!A2:F',
         'pools': 'pools!A2:D',
         'teams': 'teams!A2:E'
     }

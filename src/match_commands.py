@@ -108,10 +108,11 @@ class MatchCommands(commands.Cog):
 
     @commands.command()
     async def getmatch(self, ctx, match, map=None):
-        """Get score and statistics data for a match."""
-        #need to check against mongodb if match has already been played
+        """Get score and statistics data for a match.
+        
+        Works on any match, regardless of if it was played in the tournament or not."""
         if map is not None:
-            data = await osuapi.get_processed_match_data(match, map)
+            data = await osuapi.process_match_data(match, map)
             embed_data = await make_getmatch_embed(data)
             em_msg = discord.Embed(description=embed_data["embed_description"],
                                 color=embed_data["embed_color"],

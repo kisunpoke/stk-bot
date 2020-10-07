@@ -83,18 +83,17 @@ async def get_match_data(match_id):
         match_data = await match_request.json()
     return match_data
 
-async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=None, player_ids={}):
-    #really this should be split up more...
-    #intended for use with team vs
-    #also has no clue if a player fails or not but since everything is NF it'll be ignored
-    #also needs score threshhold to exclude refs (or abnormally low scores)
+async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_threshold=1000, ignore_player_ids=[]):
+    #no head-to-head functionality yet
     """Returns a dict of match data tailored for stat calculation.
     
-    `data` is expected to be the original JSON response, and is used in lieu of calling
-    the osu! API - helpful if successive calls of this function for the same match occur. 
+    `data` is expected to be the data of a `get_match_data()` call, and is used in lieu of calling
+    the osu! API - helpful if successive calls of this function for the same match occur.
     Otherwise, `match_id` is used to get match data, then the nth `map` (zero-indexed) is 
     obtained and processed. If available, `player_ids` should be provided, a dict of `player_ids`
     (str) to `player_names` (str).
+
+    `ignore_player_list` will ignore specific player idsks from calculation. Threshold ignoring will take precedence.
 
     This function aims to expose useful data not normally available from the get_match
     endpoint of the API.
@@ -103,13 +102,14 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
     ```
     {
         "match_name": str,
+        "match_id": str,
         "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
         "diff_id": str,
         "diff_url": f'https://osu.ppy.sh/b/{diff_id}',
         "map_thumbnail": f'https://b.ppy.sh/thumb/{diff_id}l.jpg',
         "map_name": f'{artist} - {title}',
         "winner": str, #(1 or 2)
-        "score_difference": float,
+        "score_difference": int,
         "team_1_score": int,
         "team_2_score": int, 
         "team_1_score_avg": float,
@@ -137,7 +137,8 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
         "start_time": str,
         "scoring_type": str,
         "team_type": str,
-        "play_mode": str
+        "play_mode": str,
+        "player_ids": {str: str, ...} #key is player id as str, value is actual username as str
     }
     ```
     """
@@ -155,41 +156,38 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
 
     #if a team mode is selected
     if game_data['team_type'] in ('2', '3'):
-        #determine who belongs in what team
+        #determine who belongs in what team as well as the team scores
         #as of now this is only used to get the number of players on a team, since we use
         #a conditional to add teams to the correct field anyways
         team_1_players = []
         team_2_players = []
-        for index, player_score in enumerate(game_data['scores']):
-            #player_ids[player_score["user_id"]] = ""
-            if player_score["team"] == "1":
-                team_1_players.append(player_score["user_id"])
-            if player_score["team"] == "2":
-                team_2_players.append(player_score["user_id"])
-        #determine team scores
         team_1_score = 0
         team_2_score = 0
-        for player_score in game_data["scores"]:
+        for player_score in game_data['scores']:
+            #ignore if below minimum score threshold or in ignore list
+            if int(player_score["score"]) < ignore_threshold or player_score["user_id"] in ignore_player_ids:
+                continue
             if player_score["team"] == "1":
-                #print(f'Adding {int(player_score["score"])} to team 1\'s score {team_1_score}')
+                team_1_players.append(player_score["user_id"])
                 team_1_score += int(player_score["score"])
-            else:
-                #print(f'Adding {int(player_score["score"])} to team 2\'s score {team_2_score}')
+            if player_score["team"] == "2":
+                team_2_players.append(player_score["user_id"])
                 team_2_score += int(player_score["score"])
-        #print(f'Team 1 score is {team_1_score}')
+
         #who won
         if team_1_score != team_2_score:
             winner = "Blue" if team_1_score > team_2_score else "Red"
         else:
             winner = "Tie"
+
         #score diff
         score_diff = abs(team_1_score-team_2_score)
 
-        #generate the individual lines that will be in the discord embed
+        #generate the data for individual player scores for this map
         individual_scores = []
         for player_score in game_data["scores"]:
-            #ignore if below minimum score threshold
-            if int(player_score["score"]) < ignore_threshold:
+            #ignore if below minimum score threshold or in ignore list
+            if int(player_score["score"]) < ignore_threshold or player_score["user_id"] in ignore_player_ids:
                 continue
             count_300 = int(player_score["count300"])
             count_100 = int(player_score["count100"])
@@ -203,15 +201,18 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
             #if we don't currently know what the name of a certain player id is, look it up against the mongodb and osuapi, in that order
             #might fail if the player is restricted, not sure on that
             if not player_ids[player_score["user_id"]]:
+                print(f"Hit MongoDB for player ID {player_score['user_id']}")
                 player_document = await (db_manip.getval("id", player_score["user_id"], "players_and_teams", "players"))
                 if player_document == None:
                     #this means that we don't have this player saved for some reason
                     #so we'll go the alternative route, getting the username manually
                     #this'll probably happen if somebody tries to get a non-tournament mp
+                    print(f"MongoDB lookup for {player_score['user_id']} failed, resorting to osu! api")
                     player_data = await get_player_data(player_score["user_id"])
                     player_name = player_data["username"]
                 else:
                     player_name = player_document["user_name"]
+                #add to player_ids dict, which will help us build a cache over time for certain processes
                 player_ids[player_score["user_id"]] = player_name
             individual_score = {
                 "user_id": player_score["user_id"],
@@ -232,8 +233,10 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
                 "team": player_score["team"]
             }
             individual_scores.append(individual_score)
+        print(player_ids)
         team_vs_final = {
             "match_name": match_data["match"]["name"],
+            "match_id": match_id,
             "match_url": f'https://osu.ppy.sh/community/matches/{match_id}',
             "diff_id": game_data["beatmap_id"],
             "diff_url": f'https://osu.ppy.sh/b/{game_data["beatmap_id"]}',
@@ -249,6 +252,7 @@ async def get_processed_match_data(match_id, map, ignore_threshold=1000, data=No
             "start_time": game_data["start_time"],
             "scoring_type": game_data["scoring_type"],
             "team_type": game_data["team_type"],
-            "play_mode": game_data["play_mode"]
+            "play_mode": game_data["play_mode"],
+            "player_ids": player_ids
         }
         return team_vs_final
