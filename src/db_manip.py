@@ -64,7 +64,7 @@ The cluster structure is as follows:
     diff_id: string (int, not pool-map format),
     match_id: string,
     match_name: string,
-    match_index: string,
+    match_index: int,
     pool: string*,
     stage: string*,
 }
@@ -659,6 +659,7 @@ async def update_team_stats(team_dict):
             print(f"Lookup for team {team_name} failed!!")
             pprint.pprint(team_dict[team_name])
             continue
+        processed_maps = []
         stat = team_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
         baseline_acc = stat['average_acc'] * stat['maps_played']
@@ -667,11 +668,13 @@ async def update_team_stats(team_dict):
         for score in team_dict[team_name]:
             baseline_acc += score['accuracy']
             baseline_score += score['score']
-            stat['maps_played'] += 1
-            if score['score_difference'] > 0:
-                stat['maps_won'] += 1
-            elif score['score_difference'] < 0:
-                stat['maps_lost'] += 1
+            if score['match_id']+str(score['match_index']) not in processed_maps:
+                stat['maps_played'] += 1
+                if score['score_difference'] > 0:
+                    stat['maps_won'] += 1
+                elif score['score_difference'] < 0:
+                    stat['maps_lost'] += 1
+                processed_maps.append(score['match_id']+str(score['match_index']))
             stat['hits']['300_count'] += score['hits']['300_count']
             stat['hits']['100_count'] += score['hits']['100_count']
             stat['hits']['50_count'] += score['hits']['50_count']
