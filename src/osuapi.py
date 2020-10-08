@@ -93,7 +93,8 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     obtained and processed. If available, `player_ids` should be provided, a dict of `player_ids`
     (str) to `player_names` (str).
 
-    `ignore_player_list` will ignore specific player idsks from calculation. Threshold ignoring will take precedence.
+    - `ignore_player_list` will ignore specific player ids from calculation. 
+    - `ignore_threshold` will ignore scores below a specific value. 1000 by default.
 
     This function aims to expose useful data not normally available from the get_match
     endpoint of the API.

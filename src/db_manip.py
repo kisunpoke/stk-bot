@@ -147,15 +147,14 @@ The cluster structure is as follows:
 
 `Team` documents have the following fields:
 {
-    _id: str (we are certain teams should never have the same name)
-    players: [str, str, ...] (of player ids)
+    _id: str #(we are certain teams should never have the same name)
+    players: [str, str, ...] #(of player ids)
+    scores: [str, str, ...] #(of score _ids)
     cached:{**
         average_acc: double
         acc_rank: int
         average_score: double
         score_rank: int
-        average_contrib: double
-        contrib_rank: int
         maps_played: int
         maps_won: int
         maps_lost: int
@@ -373,6 +372,7 @@ async def add_players_and_teams(player_data):
         team_document = {
             '_id': team[0],
             'players': player_ids,
+            'scores': [],
             'cached':{
                 'average_acc': 0,
                 'acc_rank': 0,
@@ -486,6 +486,9 @@ async def add_scores(matches_data):
                 continue
             player_id_cache = processed["player_ids"]
             pool_name = await determine_pool(processed["diff_id"])
+            #this map isn't in the pool; don't go any further
+            if not pool_name:
+                continue
             #oh my god the function complexity lol
             for score in processed["individual_scores"]:
                 #this format is theoretically always unique and can yield score information in itself
@@ -629,12 +632,10 @@ async def update_team_stats(team_dict):
         #theoretically no need to call every single score that's already stored in the player's document
         baseline_acc = stat['average_acc'] * stat['maps_played']
         baseline_score = stat['average_score'] * stat['maps_played']
-        baseline_contrib = stat['average_contrib'] * stat['maps_played']
 
         for score in team_dict[team_name]:
             baseline_acc += score['accuracy']
             baseline_score += score['score']
-            baseline_contrib += score['contrib']
             stat['maps_played'] += 1
             if score['score_difference'] > 0:
                 stat['maps_won'] += 1
@@ -649,7 +650,6 @@ async def update_team_stats(team_dict):
         #recalculate baselines back to an average
         stat['average_acc'] = baseline_acc / stat['maps_played'] 
         stat['average_score'] = baseline_score / stat['maps_played'] 
-        stat['average_contrib'] = baseline_contrib / stat['maps_played']  
 
         #pprint.pprint(team_document)
         
