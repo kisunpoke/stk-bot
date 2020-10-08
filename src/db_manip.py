@@ -571,6 +571,9 @@ async def update_player_stats(player_dict):
     player_collection = db['players']
     for player_id in player_dict:
         player_document = await player_collection.find_one({'_id': player_id})
+        if player_document == None:
+            print(f"Lookup for {player_id} failed!!")
+            continue
         stat = player_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
         baseline_acc = stat['average_acc'] * stat['maps_played']
@@ -593,11 +596,11 @@ async def update_player_stats(player_dict):
             player_document['scores'].append(score['_id'])
         
         #recalculate baselines back to an average
-        player_document['average_acc'] = baseline_acc / player_document['maps_played'] 
-        player_document['average_score'] = baseline_score / player_document['maps_played'] 
-        player_document['average_contrib'] = baseline_contrib / player_document['maps_played'] 
+        stat['average_acc'] = baseline_acc / stat['maps_played'] 
+        stat['average_score'] = baseline_score / stat['maps_played'] 
+        stat['average_contrib'] = baseline_contrib / stat['maps_played'] 
 
-        pprint.pprint(player_document)
+        #pprint.pprint(player_document)
         
         #and update the document
         await player_collection.replace_one({'_id': player_id}, player_document)
@@ -618,14 +621,17 @@ async def update_team_stats(team_dict):
     db = client['players_and_teams']
     team_collection = db['teams']
     for team_name in team_dict:
-        player_document = await player_collection.find_one({'_id': player_id})
-        stat = player_document['cached']
+        team_document = await team_collection.find_one({'_id': team_name})
+        if team_document == None:
+            print(f"Lookup for {team_name} failed!!")
+            continue
+        stat = team_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
         baseline_acc = stat['average_acc'] * stat['maps_played']
         baseline_score = stat['average_score'] * stat['maps_played']
         baseline_contrib = stat['average_contrib'] * stat['maps_played']
 
-        for score in player_dict[player_id]:
+        for score in team_dict[team_name]:
             baseline_acc += score['accuracy']
             baseline_score += score['score']
             baseline_contrib += score['contrib']
@@ -638,17 +644,17 @@ async def update_team_stats(team_dict):
             stat['hits']['100_count'] += score['hits']['100_count']
             stat['hits']['50_count'] += score['hits']['50_count']
             stat['hits']['miss_count'] += score['hits']['miss_count']
-            player_document['scores'].append(score['_id'])
+            team_document['scores'].append(score['_id'])
         
         #recalculate baselines back to an average
-        player_document['average_acc'] = baseline_acc / player_document['maps_played'] 
-        player_document['average_score'] = baseline_score / player_document['maps_played'] 
-        player_document['average_contrib'] = baseline_contrib / player_document['maps_played'] 
+        stat['average_acc'] = baseline_acc / stat['maps_played'] 
+        stat['average_score'] = baseline_score / stat['maps_played'] 
+        stat['average_contrib'] = baseline_contrib / stat['maps_played']  
 
-        pprint.pprint(player_document)
+        #pprint.pprint(team_document)
         
         #and update the document
-        await player_collection.replace_one({'_id': player_id}, player_document)
+        await team_collection.replace_one({'_id': team_name}, team_document)
 
 async def update_map_stats(map_dict):
     print("map_dict:")
