@@ -568,24 +568,24 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     score_collection = score_db["scores"]
     
     if ctx:
-        ctx.send("finishing up score insertion (7/11)")
+        await ctx.send("finishing up score insertion (7/11)")
     await score_collection.insert_many(score_documents)
     #supposedly index creation after inserting data is faster so it's after the fx above    
     if create_index:
         #descending: all scores
-        await score_collection.create_index(("score", -1))
+        await score_collection.create_index([("score", -1)])
 
     if ctx:
-        ctx.send("updating player stats (8/11)")
+        await ctx.send("updating player stats (8/11)")
     await update_player_stats(player_documents)
     if ctx:
-        ctx.send("updating team stats (9/11)")
+        await ctx.send("updating team stats (9/11)")
     await update_team_stats(team_documents)
     if ctx:
-        ctx.send("updating match stats (10/11)")
+        await ctx.send("updating match stats (10/11)")
     await create_match_stats(matches_documents)
     if ctx:
-        ctx.send("updating map stats (11/11)")
+        await ctx.send("updating map stats (11/11)")
     await update_map_stats(map_documents)
     #await update_ranks
 
@@ -607,6 +607,7 @@ async def update_player_stats(player_dict):
         player_document = await player_collection.find_one({'_id': player_id})
         if player_document == None:
             print(f"Lookup for player {player_id} failed!!")
+            pprint.pprint(player_dict[player_id])
             continue
         stat = player_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
@@ -656,6 +657,7 @@ async def update_team_stats(team_dict):
         team_document = await team_collection.find_one({'_id': team_name})
         if team_document == None:
             print(f"Lookup for team {team_name} failed!!")
+            pprint.pprint(team_dict[team_name])
             continue
         stat = team_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
@@ -699,7 +701,8 @@ async def update_map_stats(map_dict):
         #here we store the distinct matches, adding it to the pick count at the end
         unique_match_ids = []
         #collections are split by pool, but fortunately we store the pool in the Score doc
-        pool_collection = map_dict[diff_id]["pool"]
+        #we'll just take the first such doc
+        pool_collection = db[map_dict[diff_id][0]["pool"]]
         map_document = await pool_collection.find_one({'_id': diff_id})
         if map_document == None:
             #which means something has gone horribly wrong
@@ -727,8 +730,8 @@ async def update_map_stats(map_dict):
             map_document['scores'].append(score['_id'])
         
         #recalculate baselines back to an average
-        stat['average_acc'] = baseline_acc / stat['maps_played'] 
-        stat['average_score'] = baseline_score / stat['maps_played'] 
+        stat['average_acc'] = baseline_acc / stat['total_scores'] 
+        stat['average_score'] = baseline_score / stat['total_scores'] 
 
         #for maps, add the number of picks
         stat['picks'] += len(unique_match_ids)
