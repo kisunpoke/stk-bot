@@ -428,7 +428,7 @@ async def add_players_and_teams(player_data):
     await player_collection.insert_many(player_documents)
     await team_collection.insert_many(team_documents)
 
-async def add_scores(matches_data, *, create_index=False):
+async def add_scores(matches_data, *, create_index=False, ctx=None):
     """Update literally everything related to scores.
     
     This function:
@@ -452,7 +452,10 @@ async def add_scores(matches_data, *, create_index=False):
     If this function is used to initialize the score/match database, then
     `create_index` should be True. This will create an index on the "score"
     field. (Since the _ids of scores per match/map/player/etc are stored, we
-    only index by score here)
+    only index by score here, not a compound index)
+
+    If desired, `ctx` can be passed to send messages to the Discord channel where
+    the command was called. 
     """
     #so that feels like a lot, will split later as necessary
 
@@ -564,16 +567,27 @@ async def add_scores(matches_data, *, create_index=False):
     score_db = client["matches_and_scores"]
     score_collection = score_db["scores"]
     
+    if ctx:
+        ctx.send("finishing up score insertion (7/11)")
     await score_collection.insert_many(score_documents)
     #supposedly index creation after inserting data is faster so it's after the fx above    
     if create_index:
         #descending: all scores
         await score_collection.create_index(("score", -1))
 
+    if ctx:
+        ctx.send("updating player stats (8/11)")
     await update_player_stats(player_documents)
+    if ctx:
+        ctx.send("updating team stats (9/11)")
     await update_team_stats(team_documents)
+    if ctx:
+        ctx.send("updating match stats (10/11)")
     await create_match_stats(matches_documents)
+    if ctx:
+        ctx.send("updating map stats (11/11)")
     await update_map_stats(map_documents)
+    #await update_ranks
 
 
 async def update_player_stats(player_dict):
@@ -875,7 +889,7 @@ async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
     databases = ['mappools', 'players_and_teams', 'tournament_data', 'matches_and_scores']
     #total number of steps because i'm lazy
-    steps = 6
+    steps = 11
     await ctx.send(f"dropping databases... (1/{steps})")
     for database in databases:
         await client.drop_database(database)
@@ -889,5 +903,5 @@ async def rebuild_all(sheet_id, ctx):
     await ctx.send(f"building team and player db (5/{steps})")
     await add_players_and_teams(data['teams'])
     await ctx.send(f"building scores (6/{steps}) - this will take a while")
-    await add_scores(data['matches'], create_index=True)
+    await add_scores(data['matches'], create_index=True, ctx=ctx)
     await ctx.send("done!!")
