@@ -428,7 +428,7 @@ async def add_players_and_teams(player_data):
     await player_collection.insert_many(player_documents)
     await team_collection.insert_many(team_documents)
 
-async def add_scores(matches_data):
+async def add_scores(matches_data, *, create_index=False):
     """Update literally everything related to scores.
     
     This function:
@@ -448,6 +448,11 @@ async def add_scores(matches_data):
     - `bans` is a `str` of comma-separated map ids.
     - `ignore_to_index` is the index of the last map to be ignored, with
     all maps before it ignroed as well.
+
+    If this function is used to initialize the score/match database, then
+    `create_index` should be True. This will create an index on the "score"
+    field. (Since the _ids of scores per match/map/player/etc are stored, we
+    only index by score here)
     """
     #so that feels like a lot, will split later as necessary
 
@@ -558,7 +563,12 @@ async def add_scores(matches_data):
 
     score_db = client["matches_and_scores"]
     score_collection = score_db["scores"]
-    await score_collection.insert_many(score_documents)    
+    
+    await score_collection.insert_many(score_documents)
+    #supposedly index creation after inserting data is faster so it's after the fx above    
+    if create_index:
+        #descending: all scores
+        await score_collection.create_index(("score", -1))
 
     await update_player_stats(player_documents)
     await update_team_stats(team_documents)
@@ -879,5 +889,5 @@ async def rebuild_all(sheet_id, ctx):
     await ctx.send(f"building team and player db (5/{steps})")
     await add_players_and_teams(data['teams'])
     await ctx.send(f"building scores (6/{steps}) - this will take a while")
-    await add_scores(data['matches'])
+    await add_scores(data['matches'], create_index=True)
     await ctx.send("done!!")
