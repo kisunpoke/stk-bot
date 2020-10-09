@@ -159,7 +159,7 @@ class MatchCommands(commands.Cog):
         pass
 
     @commands.command()
-    async def addmatch(self, ctx, match, pool_id, stage, referee_id=None):
+    async def addmatch(self, ctx, match, pool_id, stage, bans=None, referee_id=None):
         """Add this match to the database and update all relevant data.
 
         This includes calls to update player and mappool data, as well as confirmation.

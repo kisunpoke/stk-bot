@@ -228,7 +228,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                 "combo": int(player_score["maxcombo"]),
                 "accuracy": acc_value,
                 "mod_val": int(game_data["mods"]),
-                "mods": Mods(int(game_data["mods"])).to_list(),
+                "mods": Mods(int(game_data["mods"])).to_list(), #global mods assumed
                 "pass": player_score["pass"],
                 "hits": {
                     "300_count": count_300,

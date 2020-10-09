@@ -58,14 +58,14 @@ class AdminDatabaseCommands(commands.Cog):
         await ctx.send(pprint_doc)
 
     @commands.command()
-    async def setval(self, ctx, value):
-        """Generate and return a player card (as a direct image)."""
+    async def setval(self, ctx, key, value, db, collection):
+        """Insert a MongoDB document with key:value in db[collection]."""
         await db_manip.setval(value)
         await ctx.send("done")
 
     @commands.command()
     async def deleteval(self, ctx, key, value, db='test', collection='test-data'):
-        """Generate and return a player card (as a direct image)."""
+        """Delete the MongoDB document with key:value in db[collection]."""
         await db_manip.deleteval(key, value, db, collection)
         await ctx.send("done")
 

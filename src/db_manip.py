@@ -129,7 +129,7 @@ The cluster structure is as follows:
 {
     _id: string, #(of user id; guaranteed to be unique)
     user_name: string,
-    team_name: string,
+    team_name: string, #must be equivalent to _id of Team document
     pfp_url: str,
     scores: [str, str, ...], # (list of `Score` _id)
     cached:{**
@@ -203,7 +203,7 @@ async def getval(key, value, db='test', collection='test-data'):
     return document
 
 async def setval(key, value, db='test', collection='test-data'):
-    """..."""
+    """Insert the document with key:value in db[collection]."""
     db = client[db]
     collection = db[collection]
     document = {key: value}
@@ -212,7 +212,7 @@ async def setval(key, value, db='test', collection='test-data'):
     return ("done")
 
 async def deleteval(key, value, db='test', collection='test-data'):
-    """Delete the document with key: value in db[collection]."""
+    """Delete the document with key:value in db[collection]."""
     db = client[db]
     collection = db[collection]
     document = {key: value}
@@ -243,8 +243,11 @@ async def determine_team(user_id):
     db = client["players_and_teams"]
     collection = db["teams"]
     cursor = collection.find()
-    #200 teams seems reasonable i assume
-    for team_document in await cursor.to_list(length=200):
+
+    #wait can't we just use the player doc lol
+
+    #1000 teams seems reasonable i assume
+    for team_document in await cursor.to_list(length=1000):
         if user_id in team_document["players"]:
             return team_document["_id"]
     return None
@@ -471,7 +474,11 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     only index by score here, not a compound index)
 
     If desired, `ctx` can be passed to send messages to the Discord channel where
-    the command was called. 
+    the command was called.
+
+    As of now, this function is designed exclusively for tournament matches. Attempting
+    to use this function for non-tournament matches will fail at best, blow something up
+    at worst.
     """
     #so that feels like a lot, will split later as necessary
 
