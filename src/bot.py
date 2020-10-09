@@ -4,7 +4,7 @@ from discord.ext import commands
 
 import admin_commands
 import match_commands
-import team_commands
+#import team_commands
 import user_commands
 
 '''timeline:
@@ -39,11 +39,12 @@ token = open("token").read()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 
-bot.add_cog(team_commands.PlayerCommands(bot))
-bot.add_cog(team_commands.TeamCommands(bot))
+#bot.add_cog(team_commands.PlayerCommands(bot))
+#bot.add_cog(team_commands.TeamCommands(bot))
 bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
 bot.add_cog(match_commands.MatchCommands(bot))
 bot.add_cog(user_commands.UserConfigCommands(bot))
+bot.add_cog(user_commands.UserStatsCommands(bot))
 
 @bot.event
 async def on_ready():

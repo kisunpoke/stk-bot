@@ -10,6 +10,10 @@ db_url = open("dburl").read()
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
+async def get_player_from_discord_id(id):
+    """Get the osu! player ID associated with a Discord ID.
+    
+    If this fails, returns `None`."""
 
 async def get_player_document(id):
     """Get the player document associated with `id`.
@@ -53,6 +57,19 @@ async def get_top_player_scores(player_id, page=1, mod=None):
     pass
 
 async def get_top_team_scores(team_name, page=1, mod=None):
+    """Get the top n scores (as documents) of a team, filtered by mod if defined.
+    
+    - `team_name` must be an exact match of the team name. 
+    - `page` determines the top scores to be returned. Pagination is done on a 10 score
+    per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
+    then the last reasonable page is used instead. For example, a player with 22 scores has
+    pages of 1-10, 11-20, and 21-22. Page 4 will redirect to 21-22.
+    - `mod` is the mod, in shorthand notation (NM/HR/...) to filter scores with.
+    Valid mods are those in the Mod enum definition at osuapi.py. If mod=`"NF"`,
+    it is ignored.
+    
+    Note this function does no additional work towards generating a Discord embed. If the player
+    is not found or has no valid scores, this function returns `None`."""
     pass
 
 async def get_top_map_scores(map_id, page=1):

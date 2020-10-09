@@ -6,7 +6,6 @@ import osuapi
 import db_manip
 import pprint
 
-
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -27,11 +26,24 @@ class UserConfigCommands(commands.Cog):
     async def setconfig(self, ctx, config, value):
         pass
 
-class GetStatsCommands(commands.Cog):
+class UserStatsCommands(commands.Cog):
     #except for matches, of course...
     def __init__(self, bot):
         self.bot = bot
     
     @commands.command()
-    async def playerstats(self, ctx, *, user):
+    async def playerstats(self, ctx, *, user="f"):
+        await ctx.send(user)
+
+    @commands.command()
+    async def teamstats(self, ctx, *, user="f"):
+        await ctx.send(user)
+
+    @commands.command()
+    async def playerbest(self, ctx, mod, *, user="f"):
+        await ctx.send(user)
+        await ctx.send(dog)
+
+    @commands.command()
+    async def teambest(self, ctx, mod, *, user="f"):
         await ctx.send(user)

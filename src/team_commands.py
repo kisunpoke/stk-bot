@@ -47,7 +47,7 @@ class PlayerCommands(commands.Cog):
         await ctx.send(embed=em_msg)
 
     @commands.command()
-    async def playerstats(self, ctx, player):
+    async def playerstatsa(self, ctx, player):
         """Return miscellaneous stats on a player."""
         #get player's score ids via db_manip...
         #get player's actual scores via db_manip

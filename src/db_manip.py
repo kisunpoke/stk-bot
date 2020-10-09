@@ -31,11 +31,15 @@ The cluster structure is as follows:
     icon_url: str
 }
 
+!!Unimplemented!!
 `DiscordUser` documents have the following fields:
 {
     _id: str (discord user id; guaranteed to be unique)
     osu_name: str
     osu_id: str
+    preferences: {
+        use_images: bool #determines whether ASCII tables or images are used
+    }
 }
 
 (note that this assumes a team vs format)
