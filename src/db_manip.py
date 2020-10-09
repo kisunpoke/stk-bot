@@ -162,6 +162,7 @@ The cluster structure is as follows:
         maps_played: int
         maps_won: int
         maps_lost: int
+        total_scores: int
         hits: {
             300_count: int
             100_count: int
@@ -387,6 +388,7 @@ async def add_players_and_teams(player_data):
                 'maps_played': 0,
                 'maps_won': 0,
                 'maps_lost': 0,
+                'total_scores': 0,
                 'hits':{
                     '300_count': 0,
                     '100_count': 0,
@@ -589,7 +591,6 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     await update_map_stats(map_documents)
     #await update_ranks
 
-
 async def update_player_stats(player_dict):
     """Update player statistics.
     
@@ -662,12 +663,13 @@ async def update_team_stats(team_dict):
         processed_maps = []
         stat = team_document['cached']
         #theoretically no need to call every single score that's already stored in the player's document
-        baseline_acc = stat['average_acc'] * stat['maps_played']
-        baseline_score = stat['average_score'] * stat['maps_played']
+        baseline_acc = stat['average_acc'] * stat['total_scores']
+        baseline_score = stat['average_score'] * stat['total_scores']
 
         for score in team_dict[team_name]:
             baseline_acc += score['accuracy']
             baseline_score += score['score']
+            stat['total_scores'] += 1
             if score['match_id']+str(score['match_index']) not in processed_maps:
                 stat['maps_played'] += 1
                 if score['score_difference'] > 0:
@@ -682,8 +684,8 @@ async def update_team_stats(team_dict):
             team_document['scores'].append(score['_id'])
         
         #recalculate baselines back to an average
-        stat['average_acc'] = baseline_acc / stat['maps_played'] 
-        stat['average_score'] = baseline_score / stat['maps_played'] 
+        stat['average_acc'] = baseline_acc / stat['total_scores'] 
+        stat['average_score'] = baseline_score / stat['total_scores'] 
 
         #pprint.pprint(team_document)
         
