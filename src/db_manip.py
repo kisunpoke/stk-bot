@@ -364,15 +364,14 @@ async def add_players_and_teams(player_data, *, create_index=False):
     - `player_<n>` is a player associated with `team_name`. An individual document
     for each player is created in the `players` collection.
     
-    If this function is used to initialize the playre/team database, then
-    `create_index` should be True. This will create indexes on the "average_acc"
-    and "average_score" fields.
-    field. (Since the _ids of scores per match/map/player/etc are stored, we
-    only index by score here, not a compound index)
+    If this function is used to initialize the player/team database, then
+    `create_index` should be True. This will create indexes on rankable fields
+    (both the rank and the value itself - average_acc *and* acc_rank, for example).
 
     Note that players and teams are initialized with cached statistics, like average score
-    and acc, set to zero. Players are treated as unranked if their rank is equal to 0. This means
-    that after score addition, players should always have their ranks updated."""
+    and acc, set to zero. Players are treated as unranked if their rank is equal to 0 or they
+    have zero scores. This means that after score addition, players should always have their 
+    ranks updated."""
     db = client['players_and_teams']
     team_collection = db['teams']
     player_collection = db['players']
@@ -440,9 +439,9 @@ async def add_players_and_teams(player_data, *, create_index=False):
     await team_collection.insert_many(team_documents)
 
     if create_index:
-        for field in ["average_acc", "average_score", "average_contrib"]:
+        for field in ["average_acc", "average_score", "average_contrib", "acc_rank", "score_rank", "contrib_rank"]:
             await player_collection.create_index([(field, -1)])
-        for field in ["average_acc", "average_score"]:
+        for field in ["average_acc", "average_score", "acc_rank", "score_rank"]:
             await team_collection.create_index([(field, -1)])
 
 async def add_scores(matches_data, *, create_index=False, ctx=None):
@@ -585,7 +584,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     score_collection = score_db["scores"]
     
     if ctx:
-        await ctx.send("finishing up score insertion (7/11)")
+        await ctx.send("finishing up score insertion (7/12)")
     await score_collection.insert_many(score_documents)
     #supposedly index creation after inserting data is faster so it's after the fx above    
     if create_index:
@@ -593,18 +592,20 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
         await score_collection.create_index([("score", -1)])
 
     if ctx:
-        await ctx.send("updating player stats (8/11)")
+        await ctx.send("updating player stats (8/12)")
     await update_player_stats(player_documents)
     if ctx:
-        await ctx.send("updating team stats (9/11)")
+        await ctx.send("updating team stats (9/12)")
     await update_team_stats(team_documents)
     if ctx:
-        await ctx.send("updating match stats (10/11)")
+        await ctx.send("updating match stats (10/12)")
     await create_match_stats(matches_documents)
     if ctx:
-        await ctx.send("updating map stats (11/11)")
+        await ctx.send("updating map stats (11/12)")
     await update_map_stats(map_documents)
-    #await update_ranks
+    if ctx:
+        await ctx.send("updating ranks (12/12)")
+    await update_ranks()
 
 async def update_player_stats(player_dict):
     """Update player statistics.
@@ -847,6 +848,38 @@ async def create_match_stats(match_dict):
     #actually perform batch insert
     await match_collection.insert_many(match_docs)
 
+async def update_ranks():
+    """Iterate through every team and player document and update their ranks.
+    
+    This is achieved by sorting documents by the required field, converting it to a list,
+    and then using `enumerate()` to determine its position in the list. If the number of scores
+    for that player or team is equal to zero, that team remains unranked."""
+    equivs = {
+        "cached.average_acc": "acc_rank",
+        "cached.average_score": "score_rank",
+        "cached.average_contrib": "contrib_rank"
+    }
+    db = client["players_and_teams"]
+    player_collection = db["players"]
+    team_collection = db["teams"]
+    for field in ["cached.average_acc", "cached.average_score", "cached.average_contrib"]:
+        cursor = player_collection.find().sort(field, -1)
+        #i would imagine we never get that many players
+        for index, player_document in enumerate(await cursor.to_list(length=1000)):
+            #pprint.pprint(player_document)
+            if player_document["cached"]["maps_played"] != 0:
+                player_document["cached"][equivs[field]] = index+1
+                await player_collection.replace_one({'_id': player_document["_id"]}, player_document)
+    for field in ["cached.average_acc", "cached.average_score"]:
+        cursor = team_collection.find().sort(field, -1)
+        #i would imagine we never get that many teams
+        for index, team_document in enumerate(await cursor.to_list(length=1000)):
+            if team_document["cached"]["maps_played"] != 0:
+                team_document["cached"][equivs[field]] = index+1
+                await team_collection.replace_one({'_id': team_document["_id"]}, team_document)
+
+    #there were some alternate methods, but this is the one i understand best
+
 async def get_all_gsheet_data(sheet_id):
     #this will (should?) block the bot during execution
     #however, this is desired as we don't want other things to happen while we're doing this
@@ -912,7 +945,7 @@ async def rebuild_all(sheet_id, ctx):
     """Drops ALL non-test databases, then rebuilds them using gsheet data."""
     databases = ['mappools', 'players_and_teams', 'tournament_data', 'matches_and_scores']
     #total number of steps because i'm lazy
-    steps = 11
+    steps = 12
     await ctx.send(f"dropping databases... (1/{steps})")
     for database in databases:
         await client.drop_database(database)
@@ -924,7 +957,7 @@ async def rebuild_all(sheet_id, ctx):
     await ctx.send(f"building mappool db (4/{steps})")
     await add_pools(data['pools'])
     await ctx.send(f"building team and player db (5/{steps})")
-    await add_players_and_teams(data['teams'])
+    await add_players_and_teams(data['teams'], create_index=True)
     await ctx.send(f"building scores (6/{steps}) - this will take a while")
     await add_scores(data['matches'], create_index=True, ctx=ctx)
     await ctx.send("done!!")
