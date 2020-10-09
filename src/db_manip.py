@@ -137,6 +137,8 @@ The cluster structure is as follows:
         acc_rank: int,
         average_score: double,
         score_rank: int,
+        average_contrib: double,
+        contrib_rank: int,
         maps_played: int,
         maps_won: int,
         maps_lost: int,
@@ -346,7 +348,7 @@ async def add_pools(pool_data):
     meta_collection = db['meta']
     await meta_collection.insert_many(meta_docs)
 
-async def add_players_and_teams(player_data):
+async def add_players_and_teams(player_data, *, create_index=False):
     """Update the `tournament_data` database from `player_data`.
     
     *This function is not intended for updating existing players.*
@@ -362,8 +364,15 @@ async def add_players_and_teams(player_data):
     - `player_<n>` is a player associated with `team_name`. An individual document
     for each player is created in the `players` collection.
     
-    Note that players and teams are initialized with some cached statistics, like average score
-    and acc, set to zero."""
+    If this function is used to initialize the playre/team database, then
+    `create_index` should be True. This will create indexes on the "average_acc"
+    and "average_score" fields.
+    field. (Since the _ids of scores per match/map/player/etc are stored, we
+    only index by score here, not a compound index)
+
+    Note that players and teams are initialized with cached statistics, like average score
+    and acc, set to zero. Players are treated as unranked if their rank is equal to 0. This means
+    that after score addition, players should always have their ranks updated."""
     db = client['players_and_teams']
     team_collection = db['teams']
     player_collection = db['players']
@@ -429,6 +438,12 @@ async def add_players_and_teams(player_data):
             player_documents.append(player_document)
     await player_collection.insert_many(player_documents)
     await team_collection.insert_many(team_documents)
+
+    if create_index:
+        for field in ["average_acc", "average_score", "average_contrib"]:
+            await player_collection.create_index([(field, -1)])
+        for field in ["average_acc", "average_score"]:
+            await team_collection.create_index([(field, -1)])
 
 async def add_scores(matches_data, *, create_index=False, ctx=None):
     """Update literally everything related to scores.
