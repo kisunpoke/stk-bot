@@ -147,8 +147,11 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     match_data = data
     if not match_data:
         match_data = await get_match_data(match_id)
-    game_data = match_data["games"][int(map)]
-    #stop execution here if no scores are available for some reason
+    try:
+        game_data = match_data["games"][int(map)]
+    except:
+        return None
+    #stop execution here if no scores are available, but there was a game for some reason
     if not game_data['scores']:
         return None
     map_data = await get_map_data(game_data["beatmap_id"])
@@ -157,7 +160,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     #if head-to-head or tag co-op is selected
     if game_data['team_type'] in ('0', '1'):
         #currently unsupported!
-        pass
+        return None
 
     #if a team mode is selected
     if game_data['team_type'] in ('2', '3'):

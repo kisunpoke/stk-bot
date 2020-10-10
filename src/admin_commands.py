@@ -133,3 +133,21 @@ class AdminDatabaseCommands(commands.Cog):
                 await ctx.send("ok, done; you may also want to update this team on the data spreadsheet")
             else:
                 await ctx.send("Canceled.")
+
+    @commands.command()
+    async def addmatch(self, ctx, match, pool_id, stage, bans=None, referee_id=None):
+        """Add this match to the database and update all relevant data.
+
+        This includes calls to update player and mappool data, as well as confirmation.
+        """
+        #get match data via osuapi
+        #get list of maps from mappool meta doc based on pool_id
+        #return list of matches that used a map from the specified pool_id
+        #generate a confirmation embed
+        #actually execute db_manip funct
+        pass
+
+    @commands.command()
+    async def deletematch(self, ctx, match):
+        """Delete this match from the database and update the involved players' data."""
+        pass

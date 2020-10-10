@@ -110,9 +110,15 @@ class MatchCommands(commands.Cog):
     async def getmatch(self, ctx, match, map=None):
         """Get score and statistics data for a match.
         
-        Works on any match, regardless of if it was played in the tournament or not."""
+        Works on any match, regardless of if it was played in the tournament or not.
+        - `match` is the mp id.
+        - `map` is the map index. If `map = "list"`, then sends a list of the first twenty maps played.
+        If no map is defined, then returns general match statistics if available. If map index is defined,
+        returns match statistic for that specific map."""
         if map is not None:
             data = await osuapi.process_match_data(match, map)
+            if data is None:
+                await ctx.send("Something went wrong... Are you sure this is a valid mp and your index is correct?")
             embed_data = await make_getmatch_embed(data)
             em_msg = discord.Embed(description=embed_data["embed_description"],
                                 color=embed_data["embed_color"],
@@ -156,22 +162,4 @@ class MatchCommands(commands.Cog):
     @commands.command()
     async def trackmatch(self, ctx, match, map=1):
         """Start tracking a match, returning embeds similar to `getmatch()`."""
-        pass
-
-    @commands.command()
-    async def addmatch(self, ctx, match, pool_id, stage, bans=None, referee_id=None):
-        """Add this match to the database and update all relevant data.
-
-        This includes calls to update player and mappool data, as well as confirmation.
-        """
-        #get match data via osuapi
-        #get list of maps from mappool meta doc based on pool_id
-        #return list of matches that used a map from the specified pool_id
-        #generate a confirmation embed
-        #actually execute db_manip funct
-        pass
-
-    @commands.command()
-    async def deletematch(self, ctx, match):
-        """Delete this match from the database and update the involved players' data."""
         pass
