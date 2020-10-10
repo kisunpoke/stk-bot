@@ -84,7 +84,34 @@ class UserStatsCommands(commands.Cog):
         If no user is defined, then it is assumed to be the one associated with that
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id."""
-        pass
+        if user is None:
+            user_doc = await db_get.get_user_document(ctx.message.author.id)
+            if not user_doc:
+                await ctx.send("I need a name - try `setuser <your osu! username/id>` if you're referring to yourself.")
+                return None
+            user = user_doc["osu_id"]
+        player_document = await db_get.get_player_document(user)
+        player_url = f'https://osu.ppy.sh/u/{player_document["_id"]}'
+        stat = player_document["cached"]
+
+        #wow that's a tad unreadable
+        msg = (f"STK8 stats for {player_document['user_name']}\n\n__Averages__"
+               f"**Avg. Score:** {stat['average_score']} (#{stat['score_rank']})\n"
+               f"**Avg. Accuracy:** {stat['average_acc']} (#{stat['acc_rank']})\n"
+               f"**Avg. Contrib:** {stat['average_contrib']} (#{stat['contrib_rank']})\n"
+               f"\n\n__General__\n"
+               f"**Hits (300/100/50/miss):** {stat['hits']['300_count']}/{stat['hits']['50_count']}/"
+               f"{stat['hits']['100_count']}/{stat['hits']['miss_count']}\n"
+               f"**Maps played:** {stat['maps_played']} (W/L: {stat['maps_won']}/{stat['maps_lost']}, "
+               f"{'{:.2%}'.format(stat['maps_won']/stat['maps_lost'])})\n"
+               f"__Mod Information__\n"
+               f"sorry i forgot we don't have the technology for that yet lmao")
+        em_msg = discord.Embed(description=msg)
+        em_msg.set_author(name=player_document["user_name"], url=player_url)
+        em_msg.set_thumbnail(url=player_document["pfp_url"])
+        em_msg.set_footer(text=f"You can get a list of this player's scores with !!playerbest {player_document['user_name']}. "
+                               f"You can also use !!playercard {player_document['user_name']} for their player card.")
+        await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["ts"])
     async def teamstats(self, ctx, *, team=None):
