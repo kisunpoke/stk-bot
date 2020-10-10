@@ -12,22 +12,32 @@ class UserConfigCommands(commands.Cog):
 
     @commands.command()
     async def setuser(self, ctx, *, user):
-        """Associate this osu! username/id with this discord ID.
+        """Associate this osu! username/id with this Discord ID.
         
         Either username or ID is valid, and the name does not need to be enclosed
-        in quotes."""
-        await ctx.send(user)
-
-    @commands.command()
-    async def setteam(self, ctx, *, team):
-        await ctx.send(team)
+        in quotes. If that player has not yet been registered in the database, it
+        will refuse to associate them with that username. (No document will be created
+        or modified as a result.)
+        
+        Successful player association will also automatically associate them with a team.
+        This will allow the Discord user to use some player/team-related stat commands
+        without having to define their username."""
+        pass
 
     @commands.command()
     async def showconfigs(self, ctx):
+        """Show the configs associated with this discord ID.
+        
+        If this command is run without the discord ID already existing in the
+        database, then a DiscordUser document is created."""
         pass
 
     @commands.command()
     async def setconfig(self, ctx, config, value):
+        """Change the config associated with this discord ID.
+        
+        If this command is run without the discord ID already existing in the
+        database, then a DiscordUser document is created."""
         pass
 
 class UserStatsCommands(commands.Cog):
