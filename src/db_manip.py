@@ -264,7 +264,8 @@ async def add_meta(meta_data):
     document = {
         "full_name": meta_data[0][1],
         "shorthand": meta_data[1][1],
-        "icon_url": meta_data[2][1]
+        "icon_url": meta_data[2][1],
+        "active_pool": None
     }
     await collection.insert_one(document)
 
