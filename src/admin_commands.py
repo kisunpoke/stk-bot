@@ -34,6 +34,13 @@ async def confirmation_dialog(bot, ctx, content, footer=""):
         else:
             return False
 
+async def error_embed(bot, ctx, content, footer=""):
+    """Generate and send an error message."""
+    em_msg = discord.Embed(description=content, color=0xFF0000)
+    if footer:
+        em_msg.set_footer(text=footer)
+    await ctx.send(embed=em_msg)
+
 class AdminConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

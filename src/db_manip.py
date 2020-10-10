@@ -22,6 +22,7 @@ The cluster structure is as follows:
         -teams: collection of `Team` documents
     -tournament_data
         -meta: a single `Meta` docuemnt
+    -discord_users
         -discord_users: collection of `DiscordUser` documents
 
 `Meta` documents have the following fields:
@@ -31,12 +32,12 @@ The cluster structure is as follows:
     icon_url: str
 }
 
-!!Unimplemented!!
 `DiscordUser` documents have the following fields:
 {
     _id: str (discord user id; guaranteed to be unique)
     osu_name: str
     osu_id: str
+    team_name: str
     preferences: {
         use_images: bool #determines whether ASCII tables or images are used
     }
@@ -257,7 +258,7 @@ async def determine_team(user_id):
     return None
 
 async def add_meta(meta_data):
-    """"""
+    """Create and add the meta document."""
     db = client['tournament_data']
     collection = db['meta']
 
@@ -954,7 +955,9 @@ async def get_all_gsheet_data(sheet_id):
     return output
 
 async def rebuild_all(sheet_id, ctx):
-    """Drops ALL non-test databases, then rebuilds them using gsheet data."""
+    """Drops ALL non-test databases, then rebuilds them using gsheet data.
+    
+    This DOES NOT drop the discord_users database."""
     databases = ['mappools', 'players_and_teams', 'tournament_data', 'matches_and_scores']
     #total number of steps because i'm lazy
     steps = 12
@@ -973,3 +976,28 @@ async def rebuild_all(sheet_id, ctx):
     await ctx.send(f"building scores (6/{steps}) - this will take a while")
     await add_scores(data['matches'], create_index=True, ctx=ctx)
     await ctx.send("done!!")
+
+async def create_discord_user(id):
+    """Initialize a new DiscordUser document.
+    
+    Technically, also creates the discord_users collection and db if not
+    already created."""
+    db = client['discord_users']
+    collection = db['discord_users']
+
+    document = {
+        "_id": id,
+        "osu_name": None,
+        "osu_id": None,
+        "team_name": None,
+        "preferences":{
+            "use_images": None
+        }
+    }
+    await collection.insert_one(docment)
+
+async def update_discord_user(id, document):
+    """Update DiscordUser document."""
+    db = client['discord_users']
+    collection = db['discord_users']
+    await collection.replace_one({'_id': id}, document)

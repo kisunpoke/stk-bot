@@ -10,11 +10,13 @@ db_url = open("dburl").read()
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
-async def get_player_from_discord_id(id):
+async def get_user_document(discord_id):
     """Get the osu! player ID associated with a Discord ID.
     
     If this fails, returns `None`."""
-    pass
+    db = client['discord_users']
+    discord_user_collection = db['discord_users']
+    return await discord_user_collection.find_one({'_id': id})
 
 async def get_player_document(id):
     """Get the player document associated with `id`.

@@ -2,9 +2,13 @@
 
 import discord
 from discord.ext import commands
-import osuapi
-import db_manip
 import pprint
+
+import osuapi
+import db_get
+import db_manip
+#yes yes unqualified functions bad
+from admin_commands import error_embed
 
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +26,24 @@ class UserConfigCommands(commands.Cog):
         Successful player association will also automatically associate them with a team.
         This will allow the Discord user to use some player/team-related stat commands
         without having to define their username."""
-        pass
+        #first we check if they even exist; 
+        user_doc = await db_get.get_user_document(ctx.message.author.id)
+        if not user_doc:
+            await db_manip.create_discord_user(ctx.message.author.id)
+        player_doc = await db_get.get_player_document(user)
+        if not player_doc:
+            error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
+                     "`(\")` or using your actual osu! user ID. Note that non-tournament players "
+                     "can't be registered!")
+            await error_embed(self, ctx, error)
+            return None
+        user_doc["osu_name"] = player_doc["user_name"]
+        user_doc["osu_id"] = player_doc["_id"]
+        user_doc["team_name"] = player_doc["team_name"]
+        db_manip.update_discord_user(ctx.message.author.id, user_doc)
+
+
+
 
     @commands.command()
     async def showconfigs(self, ctx):
@@ -30,7 +51,7 @@ class UserConfigCommands(commands.Cog):
         
         If this command is run without the discord ID already existing in the
         database, then a DiscordUser document is created."""
-        pass
+        
 
     @commands.command()
     async def setconfig(self, ctx, config, value):
