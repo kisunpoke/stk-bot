@@ -14,12 +14,14 @@ async def get_player_from_discord_id(id):
     """Get the osu! player ID associated with a Discord ID.
     
     If this fails, returns `None`."""
+    pass
 
 async def get_player_document(id):
     """Get the player document associated with `id`.
     
     This will assume user ID (field _id) and then username, in that order.
     If both fail, returns `None`."""
+    pass
 
 async def get_map_document(id, pool=None):
     """Get the document associated with `id`.
@@ -99,3 +101,4 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found or has no valid scores, this function returns `None`."""
+    pass

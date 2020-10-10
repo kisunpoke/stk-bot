@@ -161,5 +161,5 @@ class MatchCommands(commands.Cog):
 
     @commands.command()
     async def trackmatch(self, ctx, match, map=1):
-        """Start tracking a match, returning embeds similar to `getmatch()`."""
+        """Start tracking a match, returning embeds similar to `getmatch()` with an index."""
         pass
