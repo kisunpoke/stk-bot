@@ -994,7 +994,7 @@ async def create_discord_user(id):
             "use_images": None
         }
     }
-    await collection.insert_one(docment)
+    await collection.insert_one(document)
 
 async def update_discord_user(id, document):
     """Update DiscordUser document."""

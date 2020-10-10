@@ -7,8 +7,7 @@ import pprint
 import osuapi
 import db_get
 import db_manip
-#yes yes unqualified functions bad
-from admin_commands import error_embed
+import prompts
 
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
@@ -35,7 +34,7 @@ class UserConfigCommands(commands.Cog):
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
                      "`(\")` or using your actual osu! user ID. Note that non-tournament players "
                      "can't be registered!")
-            await error_embed(self, ctx, error)
+            await prompts.error_embed(self, ctx, error)
             return None
         user_doc["osu_name"] = player_doc["user_name"]
         user_doc["osu_id"] = player_doc["_id"]
