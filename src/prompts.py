@@ -35,3 +35,10 @@ async def error_embed(bot, ctx, content, footer=""):
     if footer:
         em_msg.set_footer(text=footer)
     await ctx.send(embed=em_msg)
+
+async def std_embed(bot, ctx, content, footer=""):
+    """Generate and send a standard embed message."""
+    em_msg = discord.Embed(description=content)
+    if footer:
+        em_msg.set_footer(text=footer)
+    await ctx.send(embed=em_msg)

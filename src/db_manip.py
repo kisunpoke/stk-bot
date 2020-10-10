@@ -133,7 +133,8 @@ The cluster structure is as follows:
 `Player` documents have the following fields:
 {
     _id: string, #(of user id; guaranteed to be unique)
-    user_name: string,
+    user_name: str,
+    user_lower: str
     team_name: string, #must be equivalent to _id of Team document
     pfp_url: str,
     scores: [str, str, ...], # (list of `Score` _id)
@@ -159,6 +160,7 @@ The cluster structure is as follows:
 `Team` documents have the following fields:
 {
     _id: str #(we are certain teams should never have the same name)
+    name_lower: str
     players: [str, str, ...] #(of player ids)
     scores: [str, str, ...] #(of score _ids)
     cached:{**
@@ -395,6 +397,7 @@ async def add_players_and_teams(player_data, *, create_index=False):
         player_ids = [player['user_id'] for player in player_data]
         team_document = {
             '_id': team[0],
+            'name_lower': team[0].lower(),
             'players': player_ids,
             'scores': [],
             'cached':{
@@ -422,6 +425,7 @@ async def add_players_and_teams(player_data, *, create_index=False):
             player_document = {
                 "_id": player_id,
                 'user_name': player_data[player_index]['username'],
+                'user_lower': player_data[player_index]['username'].lower(),
                 'team_name': team[0],
                 'pfp_url': f"https://a.ppy.sh/{player_id}",
                 'scores': [],
@@ -448,9 +452,10 @@ async def add_players_and_teams(player_data, *, create_index=False):
     await team_collection.insert_many(team_documents)
 
     if create_index:
-        for field in ["average_acc", "average_score", "average_contrib", "acc_rank", "score_rank", "contrib_rank"]:
+        for field in ["average_acc", "average_score", "average_contrib", "acc_rank", "score_rank",
+                      "contrib_rank", "user_name", "user_lower"]:
             await player_collection.create_index([(field, -1)])
-        for field in ["average_acc", "average_score", "acc_rank", "score_rank"]:
+        for field in ["average_acc", "average_score", "acc_rank", "score_rank", "name_lower"]:
             await team_collection.create_index([(field, -1)])
 
 async def add_scores(matches_data, *, create_index=False, ctx=None):

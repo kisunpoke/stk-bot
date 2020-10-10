@@ -11,19 +11,32 @@ db_url = open("dburl").read()
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
 async def get_user_document(discord_id):
-    """Get the osu! player ID associated with a Discord ID.
+    """Get the DiscordUser document associated with a Discord ID.
     
     If this fails, returns `None`."""
     db = client['discord_users']
     discord_user_collection = db['discord_users']
-    return await discord_user_collection.find_one({'_id': id})
+    return await discord_user_collection.find_one({'_id': discord_id})
 
-async def get_player_document(id):
-    """Get the player document associated with `id`.
+async def get_player_document(player):
+    """Get the player document associated with `player`.
     
     This will assume user ID (field _id) and then username, in that order.
     If both fail, returns `None`."""
-    pass
+    db = client['players_and_teams']
+    player_collection = db['players']
+    player_document = await player_collection.find_one({'_id': player})
+    if not player_document:
+        #mongodb queries are case-sensitive
+        #i think it is marginally faster for a collection of this size to simply cache
+        #lowercase usernames than it is to perform regex and force a lowercase result
+        player_document_2 = await player_collection.find_one({'user_lower': player.lower()})
+        if not player_document_2:
+            return None
+        else:
+            return player_document_2
+    else:
+        return player_document
 
 async def get_map_document(id, pool=None):
     """Get the document associated with `id`.

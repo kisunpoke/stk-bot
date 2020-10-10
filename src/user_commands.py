@@ -25,7 +25,10 @@ class UserConfigCommands(commands.Cog):
         Successful player association will also automatically associate them with a team.
         This will allow the Discord user to use some player/team-related stat commands
         without having to define their username."""
-        #first we check if they even exist; 
+        #first we check if we already have a discord document for them
+        #we should assume it exists to prevent a mongodb add error
+        #even if they don't follow through with adding themselves, we should still create
+        #the document anyways
         user_doc = await db_get.get_user_document(ctx.message.author.id)
         if not user_doc:
             await db_manip.create_discord_user(ctx.message.author.id)
@@ -36,12 +39,21 @@ class UserConfigCommands(commands.Cog):
                      "can't be registered!")
             await prompts.error_embed(self, ctx, error)
             return None
-        user_doc["osu_name"] = player_doc["user_name"]
-        user_doc["osu_id"] = player_doc["_id"]
-        user_doc["team_name"] = player_doc["team_name"]
-        db_manip.update_discord_user(ctx.message.author.id, user_doc)
-
-
+        check_msg = (f"Is this you?\n\n"
+                     f"osu! username: {player_doc['user_name']}\n"
+                     f"osu! ID: {player_doc['_id']}\n"
+                     f"Team: {player_doc['team_name']}\n")
+        if await prompts.confirmation_dialog(self.bot, ctx, check_msg):
+            user_doc["osu_name"] = player_doc["user_name"]
+            user_doc["osu_id"] = player_doc["_id"]
+            user_doc["team_name"] = player_doc["team_name"]
+            await db_manip.update_discord_user(ctx.message.author.id, user_doc)
+            ok_msg = (f"Done! You are now {player_doc['user_name']}. "
+                      f"You should now be able to use some stat commands without "
+                      f"needing to type in your name.")
+            await ctx.send(ok_msg)
+        else:
+            await ctx.send("Aborted.")
 
 
     @commands.command()
