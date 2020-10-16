@@ -1,0 +1,1 @@
+"""If /tmp is used to store any map bgs/banners and player icons, this would handle it."""

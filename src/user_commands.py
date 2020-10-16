@@ -86,6 +86,7 @@ class UserStatsCommands(commands.Cog):
         themselves with a username/user id."""
         if user is None:
             user_doc = await db_get.get_user_document(ctx.message.author.id)
+            #need to check if user_doc exists and user_doc of osu_id is set, which is not done here yet
             if not user_doc:
                 await ctx.send("I need a name - try `setuser <your osu! username/id>` if you're referring to yourself.")
                 return None
@@ -95,15 +96,19 @@ class UserStatsCommands(commands.Cog):
         stat = player_document["cached"]
 
         #wow that's a tad unreadable
-        msg = (f"STK8 stats for {player_document['user_name']}\n\n__Averages__"
+        msg = (f"STK8 stats for {player_document['user_name']}\n"
+               f"\n"
+               f"__Averages__\n"
                f"**Avg. Score:** {stat['average_score']} (#{stat['score_rank']})\n"
                f"**Avg. Accuracy:** {stat['average_acc']} (#{stat['acc_rank']})\n"
                f"**Avg. Contrib:** {stat['average_contrib']} (#{stat['contrib_rank']})\n"
-               f"\n\n__General__\n"
+               f"\n"
+               f"__General__\n"
                f"**Hits (300/100/50/miss):** {stat['hits']['300_count']}/{stat['hits']['50_count']}/"
                f"{stat['hits']['100_count']}/{stat['hits']['miss_count']}\n"
                f"**Maps played:** {stat['maps_played']} (W/L: {stat['maps_won']}/{stat['maps_lost']}, "
-               f"{'{:.2%}'.format(stat['maps_won']/stat['maps_lost'])})\n"
+               f"{'{:.2%}'.format(stat['maps_won']/stat['maps_played'])})\n"
+               f"\n"
                f"__Mod Information__\n"
                f"sorry i forgot we don't have the technology for that yet lmao")
         em_msg = discord.Embed(description=msg)
