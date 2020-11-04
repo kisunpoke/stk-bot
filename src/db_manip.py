@@ -72,6 +72,7 @@ The cluster structure is as follows:
     match_id: string,
     match_name: string,
     match_index: int,
+    map_type: string*,
     pool: string*,
     stage: string*,
 }
@@ -258,10 +259,6 @@ async def deleteval(key, value, db='test', collection='test-data'):
     document = {key: value}
     result = await collection.delete_one(document)
     print(result)
-
-#move to util, maybe?
-
-
 
 async def add_meta(meta_data):
     """Create and add the meta document."""
@@ -539,7 +536,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
                 continue
             player_id_cache = processed["player_ids"]
             pool_name = await db_get.determine_pool(processed["diff_id"])
-            #map_type = await db_get.get_map_document(processed["diff_id"], pool_name)
+            map_type = (await db_get.get_map_document(processed["diff_id"], pool_name))["map_type"]
             #this map isn't in the pool; don't go any further
             if not pool_name:
                 continue
@@ -579,6 +576,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
                     "match_id": processed["match_id"],
                     "match_name": processed["match_name"],
                     "match_index": index,
+                    "map_type": map_type,
                     "pool": pool_name,
                     "stage": match[3]
                 }

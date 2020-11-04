@@ -148,7 +148,7 @@ class UserStatsCommands(commands.Cog):
         a mod. If that matches the set of valid mods, then it is accepted and the user is assumed to be
         the osu! user associated with that Discord ID. Of course, if no user is associated with that Discord
         ID, it will ask them to use `setuser`."""
-        pass
+        pprint.pprint(await db_get.get_top_player_scores(user, page, mod))
 
     @commands.command(aliases=["tb"])
     async def teambest(self, ctx, page=1, team=None, mod=None):
