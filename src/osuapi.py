@@ -213,7 +213,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                 player_name = player_ids[player_score["user_id"]]
             except:
                 print(f"Hit MongoDB for player ID {player_score['user_id']}")
-                player_document = await (db_manip.getval("_id", player_score["user_id"], "players_and_teams", "players"))
+                player_document = await db_get.get_player_document(player_score['user_id'])
                 if player_document == None:
                     #this means that we don't have this player saved for some reason
                     #so we'll go the alternative route, getting the username manually
@@ -221,8 +221,10 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                     print(f"MongoDB lookup for {player_score['user_id']} failed, resorting to osu! api")
                     player_data = await get_player_data(player_score["user_id"])
                     player_name = player_data["username"]
+                    team_name = ""
                 else:
                     player_name = player_document["user_name"]
+                    team_name = player_document["team_name"]
                 #add to player_ids dict, which will help us build a cache over time for certain processes
                 player_ids[player_score["user_id"]] = player_name
             individual_score = {
@@ -242,7 +244,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                 },
                 "team_contrib": contrib,
                 "team": player_score["team"],
-                "team_name": await db_get.get_player_document(player_score["user_id"])["team_name"]
+                "team_name": team_name
             }
             individual_scores.append(individual_score)
         #import pprint
