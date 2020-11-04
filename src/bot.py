@@ -8,14 +8,9 @@ import user_commands
 
 '''timeline:
 
-link gsheets
-update and generate player forms from sheeted teams+players - admin
-update and generate mappool db from sheeted pool fields - admin
-get test data from stk6
 
-(won't wrap the above in async since they should rarely be called and must always be run before anything else happens)
+implement per-mod cached
 
-score document generation from list of match ids
 ability to hold session prefs (current mappool, image generation disabled, scorewatch interval)
 implement player text stats and scores
 team text stats and scores

@@ -139,20 +139,35 @@ The cluster structure is as follows:
     pfp_url: str,
     scores: [str, str, ...], # (list of `Score` _id)
     cached:{**
-        average_acc: double,
-        acc_rank: int,
-        average_score: double,
-        score_rank: int,
-        average_contrib: double,
-        contrib_rank: int,
-        maps_played: int,
-        maps_won: int,
-        maps_lost: int,
+        average_acc: double
+        acc_rank: int
+        average_score: double
+        score_rank: int
+        average_contrib: double
+        contrib_rank: int
+        maps_played: int
+        maps_won: int
+        maps_lost: int
+        total_scores: int
         hits: {
-            300_count: int,
-            100_count: int,
-            50_count: int,
+            300_count: int
+            100_count: int
+            50_count: int
             miss_count: int
+        }
+        by_mod:{
+            nomod:{
+                played: int
+                maps_won: int
+                maps_lost: int
+                average_acc: double
+                average_score: double
+                average_contrib: double
+            },
+            hidden:{<same as nomod>},
+            hardrock:{<same as nomod>},
+            doubletime:{<same as nomod>},
+            freemod:{<same as nomod>},
         }
     }
 }
@@ -177,6 +192,21 @@ The cluster structure is as follows:
             100_count: int
             50_count: int
             miss_count: int
+        }
+        by_mod:{
+            nomod:{
+                played: int
+                maps_won: int
+                maps_lost: int
+                average_acc: double
+                average_score: double
+                average_contrib: double
+            },
+            hidden:{<same as nomod>},
+            hardrock:{<same as nomod>},
+            doubletime:{<same as nomod>},
+            freemod:{<same as nomod>},
+        }
     }
 }
 
@@ -194,6 +224,7 @@ import pprint
 import collections
 
 import osuapi
+import db_get
 
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
@@ -534,6 +565,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
                 continue
             player_id_cache = processed["player_ids"]
             pool_name = await determine_pool(processed["diff_id"])
+            #map_type = await db_get.get_map_document(processed["diff_id"], pool_name)
             #this map isn't in the pool; don't go any further
             if not pool_name:
                 continue
