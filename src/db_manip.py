@@ -27,9 +27,11 @@ The cluster structure is as follows:
 
 `Meta` documents have the following fields:
 {
+    _id: "main"
     full_name: str
     shorthand: str
     icon_url: str
+    active_pool: str
 }
 
 `DiscordUser` documents have the following fields:
@@ -106,7 +108,7 @@ The cluster structure is as follows:
 {
     _id: str (/b is guaranteed to be unique)
     scores: [str, str, ...] #Score document _id's
-    pool_id: str
+    pool_id: str (of NM1, HD2, HR3, etc)
     map_type: str (of NM, HD, HR, etc)
     map_url: str
     thumbnail_url: str
@@ -267,10 +269,11 @@ async def add_meta(meta_data):
     collection = db['meta']
 
     document = {
+        "_id": "main",
         "full_name": meta_data[0][1],
         "shorthand": meta_data[1][1],
         "icon_url": meta_data[2][1],
-        "active_pool": None
+        "active_pool": meta_data[3][1]
     }
     await collection.insert_one(document)
 

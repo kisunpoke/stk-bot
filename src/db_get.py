@@ -14,7 +14,7 @@ async def determine_pool(map_id):
     """Figure out what pool this `map_id` belongs in.
     
     Returns shorthand pool notation, equivalent to the collection name in 
-    the `mappools` database."""
+    the `mappools` database. Returns `None` on fail."""
     db = client["mappools"]
     collection = db["meta"]
     cursor = collection.find()
@@ -23,6 +23,15 @@ async def determine_pool(map_id):
         if map_id in meta_document["diff_ids"]:
             return meta_document["_id"]
     return None
+
+async def get_meta_document():
+    """Gets the tournament-wide meta document.
+    
+    If the meta document does not exist, returns None."""
+    db = client["tournament_data"]
+    meta_collection = db["meta"]
+    return await meta_collection.find_one({'_id': "main"})
+
 
 async def get_user_document(discord_id):
     """Get the DiscordUser document associated with a Discord ID.
@@ -52,6 +61,16 @@ async def get_player_document(player):
     else:
         return player_document
 
+async def get_team_document(team):
+    """Get the team document associated with `team_name`.
+    
+    `team_name` should be an exact match of an _id in the teams collection.
+    However, `name_lower` is the actual field queried.
+    If a document cannot be found, `None` is returned."""
+    db = client['players_and_teams']
+    team_collection = db['teams']
+    return await team_collection.find_one({'name_lower': team})
+
 async def get_map_document(id, pool=None):
     """Get the document associated with `id`.
     
@@ -59,28 +78,35 @@ async def get_map_document(id, pool=None):
     If conversion to `int` fails (i.e. letters have been passed)
     or a database loookup fails, `id` is treated as shorthand notation
     `<mod><id>`, as in "NM1" or "HR2". The pool currently set as active in
-    the Meta document will be used. If this fails, `None` is returned."""
-    pass
-
-async def get_team_document(team_name):
-    """Get the team document associated with `team_name`.
+    the Meta document will be used. If this fails, `None` is returned.
     
-    `team_name` must be an exact match of an _id in the teams collection.
-    If a document cannot be found, `None` is returned."""
-    pass
+    `pool` should be equivalent to a collection name (F/GF/GS/QF...)."""
+    db = client['mappools']
+    pool_collection = pool
+    try:
+        int(id)
+        #id is only numbers, and is probably a /b id
+        if not pool:
+            pool_collection = determine_pool(id)
+        return await pool_collection.find_one({'_id': id})
+    except:
+        #id is in mod-index format, like NM1 or TB1
+        if not pool:
+            pool_collection = await get_meta_document()
+        return await pool_collection.find_one({'pool_id': id})
 
 async def get_match_document(match_id):
     """Get the match document associated with `match_id`.
     
     `match_id` must be an exact match of an _id in the matches collection.
-    Lobby names are not acceptable. If `int(match_id)` returns an error or
-    the match cannot be found, `None` is returned."""
-    pass
+    Lobby names are not acceptable. If the match cannot be found, `None` is returned."""
+    #lobby names aren't acceptable because we don't store them lol
+    db = client['matches_and_scores']
+    match_collection = db['matches']
+    return await match_collection.find_one({'_id': match_id})
 
 async def get_top_player_scores(player_id, page=1, mod=None):
     """Get the top n scores (as documents) of a player, filtered by mod if defined.
-    
-    The 
 
     - `player_id` can be either a username or a user ID and will be passed to
     `get_player_document()`. User ID is preferred.
@@ -96,7 +122,8 @@ async def get_top_player_scores(player_id, page=1, mod=None):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found or has no valid scores, this function returns `None`."""
-    pass
+    db = client['discord_users']
+    discord_user_collection = db['discord_users']
 
 async def get_top_team_scores(team_name, page=1, mod=None, use_mod_array=False):
     """Get the top n scores (as documents) of a team, filtered by mod if defined.
@@ -113,7 +140,8 @@ async def get_top_team_scores(team_name, page=1, mod=None, use_mod_array=False):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found or has no valid scores, this function returns `None`."""
-    pass
+    db = client['discord_users']
+    discord_user_collection = db['discord_users']
 
 async def get_top_map_scores(map_id, page=1, pool=None):
     """Get the top n scores (as documents) of a map, filtered by mod if defined.
@@ -130,4 +158,5 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found or has no valid scores, this function returns `None`."""
-    pass
+    db = client['discord_users']
+    discord_user_collection = db['discord_users']
