@@ -7,6 +7,7 @@ import aiohttp
 from enum import IntFlag
 
 import db_manip
+import db_get
 
 api_key = open("osukey").read()
 
@@ -241,7 +242,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                 },
                 "team_contrib": contrib,
                 "team": player_score["team"],
-                "team_name": await db_manip.determine_team(player_score["user_id"])
+                "team_name": await db_get.get_player_document(player_score["user_id"])["team_name"]
             }
             individual_scores.append(individual_score)
         #import pprint

@@ -10,6 +10,20 @@ db_url = open("dburl").read()
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
+async def determine_pool(map_id):
+    """Figure out what pool this `map_id` belongs in.
+    
+    Returns shorthand pool notation, equivalent to the collection name in 
+    the `mappools` database."""
+    db = client["mappools"]
+    collection = db["meta"]
+    cursor = collection.find()
+    #well i'd hope we never end up with 100 pools
+    for meta_document in await cursor.to_list(length=100):
+        if map_id in meta_document["diff_ids"]:
+            return meta_document["_id"]
+    return None
+
 async def get_user_document(discord_id):
     """Get the DiscordUser document associated with a Discord ID.
     
@@ -112,7 +126,7 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     then the last reasonable page is used instead. For example, a player with 22 scores has
     pages of 1-10, 11-20, and 21-22. Page 4 will redirect to 21-22.
     - `pool` is the shorthand pool name. If not defined, `map_id` must be a diff id resolvable with
-    `db_manip.determine_pool()`.
+    `db_get.determine_pool()`.
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found or has no valid scores, this function returns `None`."""

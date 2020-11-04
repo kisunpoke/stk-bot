@@ -259,36 +259,7 @@ async def deleteval(key, value, db='test', collection='test-data'):
 
 #move to util, maybe?
 
-async def determine_pool(map_id):
-    """Figure out what pool this `map_id` belongs in.
-    
-    Returns shorthand pool notation, equivalent to the collection name in 
-    the `mappools` database."""
-    db = client["mappools"]
-    collection = db["meta"]
-    cursor = collection.find()
-    #well i'd hope we never end up with 100 pools
-    for meta_document in await cursor.to_list(length=100):
-        if map_id in meta_document["diff_ids"]:
-            return meta_document["_id"]
-    return None
 
-async def determine_team(user_id):
-    """Figure out what team this `user_id` belongs in.
-    
-    Returns the full name of the team, equivalent to its `_id` in 
-    the `teams` collection of the `players_and_teams` database."""
-    db = client["players_and_teams"]
-    collection = db["teams"]
-    cursor = collection.find()
-
-    #wait can't we just use the player doc lol
-
-    #1000 teams seems reasonable i assume
-    for team_document in await cursor.to_list(length=1000):
-        if user_id in team_document["players"]:
-            return team_document["_id"]
-    return None
 
 async def add_meta(meta_data):
     """Create and add the meta document."""
@@ -564,7 +535,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
             if processed == None:
                 continue
             player_id_cache = processed["player_ids"]
-            pool_name = await determine_pool(processed["diff_id"])
+            pool_name = await db_get.determine_pool(processed["diff_id"])
             #map_type = await db_get.get_map_document(processed["diff_id"], pool_name)
             #this map isn't in the pool; don't go any further
             if not pool_name:
