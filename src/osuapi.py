@@ -92,7 +92,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     the osu! API - helpful if successive calls of this function for the same match occur.
     Otherwise, `match_id` is used to get match data, then the nth `map` (zero-indexed) is 
     obtained and processed. If available, `player_ids` should be provided, a dict of `player_ids`
-    (str) to `player_names` (str).
+    (str) to [`player_names` (str), `team_name` (str)].
 
     - `ignore_player_list` will ignore specific player ids from calculation. 
     - `ignore_threshold` will ignore scores below a specific value. 1000 by default.
@@ -210,7 +210,8 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
             #if we don't currently know what the name of a certain player id is, look it up against the mongodb and osuapi, in that order
             #might fail if the player is restricted, not sure on that
             try:
-                player_name = player_ids[player_score["user_id"]]
+                player_name = player_ids[player_score["user_id"]][0]
+                team_name = player_ids[player_score["user_id"]][1]
             except:
                 print(f"Hit MongoDB for player ID {player_score['user_id']}")
                 player_document = await db_get.get_player_document(player_score['user_id'])
@@ -226,7 +227,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                     player_name = player_document["user_name"]
                     team_name = player_document["team_name"]
                 #add to player_ids dict, which will help us build a cache over time for certain processes
-                player_ids[player_score["user_id"]] = player_name
+                player_ids[player_score["user_id"]] = [player_name, team_name]
             individual_score = {
                 "user_id": player_score["user_id"],
                 "user_name": player_name,

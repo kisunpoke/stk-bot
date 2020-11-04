@@ -83,17 +83,19 @@ async def get_map_document(id, pool=None):
     
     `pool` should be equivalent to a collection name (F/GF/GS/QF...)."""
     db = client['mappools']
-    pool_collection = pool
     try:
         int(id)
         #id is only numbers, and is probably a /b id
         if not pool:
-            pool_collection = await determine_pool(id)
+            pool = await determine_pool(id)
+        pool_collection = db[pool]
         return await pool_collection.find_one({'_id': id})
     except:
         #id is in mod-index format, like NM1 or TB1
         if not pool:
-            pool_collection = await get_meta_document()
+            meta_doc = await get_meta_document()
+            pool = meta_doc['active_pool']
+        pool_collection = db[pool]
         return await pool_collection.find_one({'pool_id': id})
 
 async def get_match_document(match_id):
