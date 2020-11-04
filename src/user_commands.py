@@ -30,12 +30,10 @@ class UserConfigCommands(commands.Cog):
         #even if they don't follow through with adding themselves, we should still create
         #the document anyways
         user_doc = await db_get.get_user_document(ctx.message.author.id)
-        if not user_doc:
-            await db_manip.create_discord_user(ctx.message.author.id)
         player_doc = await db_get.get_player_document(user)
         if not player_doc:
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
-                     "`(\")` or using your actual osu! user ID. Note that non-tournament players "
+                     "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
                      "can't be registered!")
             await prompts.error_embed(self, ctx, error)
             return None
@@ -87,11 +85,19 @@ class UserStatsCommands(commands.Cog):
         if user is None:
             user_doc = await db_get.get_user_document(ctx.message.author.id)
             #need to check if user_doc exists and user_doc of osu_id is set, which is not done here yet
-            if not user_doc:
-                await ctx.send("I need a name - try `setuser <your osu! username/id>` if you're referring to yourself.")
+            if not user_doc["osu_id"]:
+                await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
+                                                     "you're referring to yourself.")
                 return None
-            user = user_doc["osu_id"]
+            else:
+                user = user_doc["osu_id"]
         player_document = await db_get.get_player_document(user)
+        if player_document is None:
+            error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
+                     "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
+                     "don't have stats! (Also, I don't know if you've had a username change!)")
+            await prompts.error_embed(self, ctx, error)
+            return None
         player_url = f'https://osu.ppy.sh/u/{player_document["_id"]}'
         stat = player_document["cached"]
 

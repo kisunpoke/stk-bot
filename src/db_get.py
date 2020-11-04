@@ -6,6 +6,7 @@ import collections
 import math
 
 import osuapi
+import db_manip
 
 db_url = open("dburl").read()
 
@@ -37,10 +38,16 @@ async def get_meta_document():
 async def get_user_document(discord_id):
     """Get the DiscordUser document associated with a Discord ID.
     
-    If this fails, returns `None`."""
+    If this fails, generates a new DiscordUser document and returns
+    the newly-created (though empty) document. (This guarantees a document
+    is always returned.)"""
     db = client['discord_users']
     discord_user_collection = db['discord_users']
-    return await discord_user_collection.find_one({'_id': discord_id})
+    user_document = await discord_user_collection.find_one({'_id': discord_id})
+    if not user_document:
+        await db_manip.create_discord_user(discord_id)
+        user_document = await discord_user_collection.find_one({'_id': discord_id})
+    return user_document
 
 async def get_player_document(player):
     """Get the player document associated with `player`.
