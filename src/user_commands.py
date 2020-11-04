@@ -14,7 +14,7 @@ class UserConfigCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def setuser(self, ctx, *, user):
+    async def setuser(self, ctx, *user):
         """Associate this osu! username/id with this Discord ID.
         
         Either username or ID is valid, and the name does not need to be enclosed
@@ -30,6 +30,7 @@ class UserConfigCommands(commands.Cog):
         #even if they don't follow through with adding themselves, we should still create
         #the document anyways
         user_doc = await db_get.get_user_document(ctx.message.author.id)
+        user = " ".join([str(part) for part in user])
         player_doc = await db_get.get_player_document(user)
         if not player_doc:
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
@@ -48,7 +49,7 @@ class UserConfigCommands(commands.Cog):
             await db_manip.update_discord_user(ctx.message.author.id, user_doc)
             ok_msg = (f"Done! You are now {player_doc['user_name']}. "
                       f"You should now be able to use some stat commands without "
-                      f"needing to type in your name.")
+                      f"needing to type in your name or team.")
             await ctx.send(ok_msg)
         else:
             await ctx.send("Aborted.")
@@ -60,7 +61,7 @@ class UserConfigCommands(commands.Cog):
         
         If this command is run without the discord ID already existing in the
         database, then a DiscordUser document is created."""
-        
+        pass
 
     @commands.command()
     async def setconfig(self, ctx, config, value):
@@ -83,14 +84,11 @@ class UserStatsCommands(commands.Cog):
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id."""
         if user is None:
-            user_doc = await db_get.get_user_document(ctx.message.author.id)
-            #need to check if user_doc exists and user_doc of osu_id is set, which is not done here yet
-            if not user_doc["osu_id"]:
+            user = await db_get.get_player_from_user(ctx.message.author.id)
+            if not user:
                 await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
                                                      "you're referring to yourself.")
                 return None
-            else:
-                user = user_doc["osu_id"]
         player_document = await db_get.get_player_document(user)
         if player_document is None:
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
@@ -134,27 +132,52 @@ class UserStatsCommands(commands.Cog):
         pass
 
     @commands.command(aliases=["pb"])
-    async def playerbest(self, ctx, page=1, user=None, mod=None):
+    async def playerbest(self, ctx, *params):
         """Post the nth page of a user's best scores, filtered by mod if defined.
         
-        -`page` determines what set of 10 scores is returned (1-10, 11-10, ...). See
-        db_get.get_top_player_scores() for more.
+        The default parameter configuration is `playerbest <user> <page> <mod>`, all optional:
         -`user` is the username or user ID of the player to lookup. If not defined, the
         osu! user associated with the invoker's Discord ID is used. If no osu! user can be
         associated, then asks the user to use `setuser` or explicitly define the username.
+        -`page` determines what set of 10 scores is returned (1-10, 11-10, ...). See
+        db_get.get_top_player_scores() for more. Page 1 by default.
         -`mod` is the shorthand mod to filter scores by. Valid options are likely
         `["NM", "HR", "HD", "DT", and "FM"]`. Note these mods are associated with shorthand pool
-        IDs, not the *actual* mods played. TB = FM.
+        IDs, not the *actual* mods played. TB = FM. No filter by default (i.e. returns all scores).
         
         (Formally, the database command can take both - however, we probably want map types.
         Also, freemod doesn't yield individual mods, nor do we check for them.)
-        
-        Parameters are ordered in the manner they are most likely needed to be defined. Notably,
-        if only two parameters are defined, we assume that the `user` parameter actually refers to
-        a mod. If that matches the set of valid mods, then it is accepted and the user is assumed to be
-        the osu! user associated with that Discord ID. Of course, if no user is associated with that Discord
-        ID, it will ask them to use `setuser`."""
-        pprint.pprint(await db_get.get_top_player_scores(user, page, mod))
+
+        Parameters are checked from last to first until something that is definitely not a mod
+        or a page number is found, at which point that is assumed to be the username. Defaults
+        apply if `user`, `page`, or `mod` wasn't changed by this check."""
+        user = None
+        page = 1
+        mod = None
+        #determine what each parameter MIGHT be
+        for index in range(1,len(params)+1):
+            if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
+                #fields in mongodb are case-sensitive
+                mod = params[-index].upper()
+            elif params[-index].isdigit() and int(params[-index])<1000:
+                page = int(params[-index])
+            else:
+                #the remainder is assumed to be the username, at which point we stop
+                if index == 1:
+                    #slicing from zero doesn't work
+                    user = " ".join(params)
+                else:
+                    user = " ".join(params[:-(index-1)])
+                break
+        if user is None:
+            user = await db_get.get_player_from_user(ctx.message.author.id)
+            if not user:
+                await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
+                                                     "you're referring to yourself.")
+                return None
+        result = await db_get.get_top_player_scores(user, page, mod)
+            
+
 
     @commands.command(aliases=["tb"])
     async def teambest(self, ctx, page=1, team=None, mod=None):

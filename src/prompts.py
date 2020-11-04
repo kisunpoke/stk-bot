@@ -30,7 +30,9 @@ async def confirmation_dialog(bot, ctx, content, footer=""):
             return False
 
 async def error_embed(bot, ctx, content, footer=""):
-    """Generate and send an error message."""
+    """Generate and send an error message.
+    
+    Only difference from std_embed is the color."""
     em_msg = discord.Embed(description=content, color=0xFF0000)
     if footer:
         em_msg.set_footer(text=footer)
