@@ -114,9 +114,9 @@ class MatchCommands(commands.Cog):
         - `match` is the mp id.
         - `map` is the map index. If `map = "list"`, then sends a list of the first twenty maps played.
         If no map is defined, then returns general match statistics if available. If map index is defined,
-        returns match statistic for that specific map."""
+        returns match statistic for that specific map. Internally incremented by one to not make it zero-indexed."""
         if map is not None:
-            data = await osuapi.process_match_data(match, map)
+            data = await osuapi.process_match_data(match, map+1)
             if data is None:
                 await ctx.send("Something went wrong... Are you sure this is a valid mp and your index is correct?")
             embed_data = await make_getmatch_embed(data)

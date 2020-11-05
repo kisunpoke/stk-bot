@@ -94,7 +94,7 @@ class UserConfigCommands(commands.Cog):
         if isinstance(error, commands.BadArgument):
             await prompts.error_embed(self.bot, ctx, "You need to mention one user (or nobody)!", error)
     
-    @commands.command()
+    @commands.command(hidden=True)
     async def showconfigs(self, ctx):
         """Show the configs associated with this discord ID.
         
@@ -102,7 +102,7 @@ class UserConfigCommands(commands.Cog):
         database, then a DiscordUser document is created."""
         pass
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def setconfig(self, ctx, config, value):
         """Change the config associated with this discord ID.
         
@@ -120,14 +120,15 @@ class UserStatsCommands(commands.Cog):
         self.bot = bot
     
     @commands.command(aliases=["ps"])
-    async def playerstats(self, ctx, *, user=None):
+    async def playerstats(self, ctx, *user):
         """Post the stats of a user.
         
         If no user is defined, then it is assumed to be the one associated with that
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id."""
-        if user is None:
+        if not user:
             user = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
+            #means this discord user doesn't have any name set
             if not user:
                 await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
                                                      "you're referring to yourself.")
@@ -166,7 +167,7 @@ class UserStatsCommands(commands.Cog):
         await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["ts"])
-    async def teamstats(self, ctx, *, team=None):
+    async def teamstats(self, ctx, *team):
         """Post the stats of a team.
         
         If no team is defined, then it is assumed to be the one associated with that
@@ -281,7 +282,7 @@ class UserStatsCommands(commands.Cog):
         pprint.pprint(await db_get.get_top_map_scores(map_id, page, pool))
 
     @commands.command(aliases=["sbp", "serverbestp"])
-    async def serverbest(self, ctx, leaderboard, page=1, mod=None):
+    async def serverbest(self, ctx, leaderboard="score", page=1, mod=None):
         """Post the leaderboard rankings of every score.
         
         - `leaderboard` is any of "acc", "score", or "contrib." 

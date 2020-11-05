@@ -8,13 +8,16 @@ import user_commands
 
 '''to do:
 
-implement ban count
-change db_manip to accept a list of maps to ignore, rather than just the first n
+pp/rank from most recent update
+^leaderboard?
+update only players/mappool/meta etc
+match adding
+full match stats under match_commands.py
 implement cards (render leaderboards, player stats, team stats, etc)
 implement text stats (same as above but text-only)
+^for leaderboards, show where the user stands on any given page
 /tmp for downloaded assets
 deployment + integration with env vars
-full match stats under match_commands.py
 better help formatting w/ send_command_help(command) (see docs) - https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.HelpCommand.send_command_help
 ^needs usage examples
 
