@@ -284,28 +284,21 @@ class UserStatsCommands(commands.Cog):
         - `page` works the same as every similar command; 10 per page, redirects for <1
         or > the maximum.
         - `mod` can be any of ["NM", "HD", "HR", "DT", or "FM"]."""
-        pass
+        pprint.pprint(await db_get.get_top_tournament_scores(leaderboard, page, mod))
 
     @commands.command(aliases=["avglbp", "averagelbp"])
-    async def averageleaderboardp(self, ctx, leaderboard, page=1):
+    async def averageleaderboardp(self, ctx, leaderboard="score", page=1):
         """Get the best players of the given statistic.
         
-        `leaderboard` is any of "acc", "score", or "contrib." `page` works
-        the same as every other paginated command."""
-        pass
+        -`leaderboard` is any of "acc", "score", or "contrib". 
+        -`page` works the same as every other paginated command.""" 
+        pprint.pprint(await db_get.get_top_tournament_players(leaderboard, page))
 
-    @commands.command(aliases=["avglbp", "averagelbp"])
-    async def averageleaderboardp(self, ctx, leaderboard, page=1):
-        """Get the best players of the given statistic.
-        
-        `leaderboard` is any of "acc", "score", or "contrib." `page` works
-        the same as every other paginated command.""" 
-        pass
-    
     @commands.command(aliases=["avglbt", "averagelbt"])
-    async def averageleaderboardt(self, ctx, leaderboard, page=1):
+    async def averageleaderboardt(self, ctx, leaderboard="score", page=1):
         """Get the best teams of the given statistic.
         
         `leaderboard` is either "acc" or "score". `page` works
         the same as every other paginated command.""" 
-        pass
+        pprint.pprint(await db_get.get_top_tournament_teams(leaderboard, page))
+    

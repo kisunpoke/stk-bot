@@ -259,3 +259,84 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     score_collection = client['matches_and_scores']['scores']
     cursor = score_collection.find({'_id': {'$in': scores}}).sort("score", -1).skip((page-1)*10).limit(10)
     return (await cursor.to_list(length=10), max_page)
+
+async def get_top_tournament_players(leaderboard_field="score", page=1):
+    """Get the best players (as documents) in a certain average category.
+    
+    Returns the tuple (<players>, max_pages).
+    - `leaderboard` is any of `"acc"`, `"score"`, or `"contrib"`. `"score"` by default.
+    - `page` determines the top scores to be returned. Pagination is done on a 10 score
+    per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
+    then the last reasonable page is used instead. For example, a player with 22 scores has
+    pages of 1-10, 11-20, and 21-22. Page 4 will redirect to 21-22.
+    
+    Note this function does no additional work towards generating a Discord embed.
+    If no players are found, `([], 0)` is returned."""
+    db = client['players_and_teams']
+    player_collection = db['players']
+
+    player_count = await player_collection.estimated_document_count()
+
+    max_page = math.ceil(player_count/10)
+    if page < 0:
+        page = 1
+    if page > max_page:
+        page = max_page
+
+    fields = {
+        "score": "cached.average_score",
+        "acc": "cached.average_acc",
+        "contrib": "cached.average_contrib"
+    }
+
+    cursor = player_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
+    return (await cursor.to_list(length=10), max_page)
+
+async def get_top_tournament_teams(leaderboard_field="score", page=1):
+    """Get the best teams (as documents) in a certain average category.
+    
+    Returns the tuple (<teams>, max_pages).
+    - `leaderboard` is either `"acc"` or `"score"`. `"score"` by default.
+    - `page` determines the top scores to be returned. Pagination is done on a 10 score
+    per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
+    then the last reasonable page is used instead. For example, a player with 22 scores has
+    pages of 1-10, 11-20, and 21-22. Page 4 will redirect to 21-22.
+    
+    Note this function does no additional work towards generating a Discord embed.
+    If no teams are found, `([], 0)` is returned."""
+    db = client['players_and_teams']
+    team_collection = db['teams']
+
+    team_count = await team_collection.estimated_document_count()
+
+    max_page = math.ceil(team_count/10)
+    if page < 0:
+        page = 1
+    if page > max_page:
+        page = max_page
+
+    fields = {
+        "score": "cached.average_score",
+        "acc": "cached.average_acc",
+    }
+    #if leaderboard_field not in fields return None ?
+
+    cursor = team_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
+    return (await cursor.to_list(length=10), max_page)
+
+async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None):
+    """Get the best scores (as documents) in a certain category.
+    
+    Returns the tuple (<scores>, max_pages).
+    - `leaderboard` is any of `"acc"`, `"score"`, or `"contrib"`.
+    - `page` determines the top scores to be returned. Pagination is done on a 10 score
+    per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
+    then the last reasonable page is used instead. For example, a player with 22 scores has
+    pages of 1-10, 11-20, and 21-22. Page 4 will redirect to 21-22.
+    - `mod` is the mod, in shorthand notation (NM/HR/...) to filter scores with. Shorthand pool 
+    prefixes are used, with valid mods in the array `["NM", "HR", "HD", "DT", "FM"]`.
+    
+    Note this function does no additional work towards generating a Discord embed. If the player
+    is not found, this function returns `(None, None)`. If no scores are found, 
+    `([], 0)` is returned."""
+    pass
