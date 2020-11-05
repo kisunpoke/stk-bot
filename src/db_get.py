@@ -118,7 +118,7 @@ async def get_map_document(id, pool=None):
             meta_doc = await get_meta_document()
             pool = meta_doc['active_pool']
         pool_collection = db[pool]
-        return await pool_collection.find_one({'pool_id': id})
+        return await pool_collection.find_one({'pool_id': id.upper()})
 
 async def get_match_document(match_id):
     """Get the match document associated with `match_id`.
@@ -235,8 +235,6 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     """Get the top n scores (as documents) of a map.
     
     - `map_id` can be either the shorthand name of the map in the pool ("NM1") or the full diff ID.
-    If pool is not defined, then `map_id` must be the diff id. If `pool` is defined, then
-    `map_id` can be either.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
     then the last reasonable page is used instead. For example, a player with 22 scores has
@@ -245,17 +243,19 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     `determine_pool()`.
     
     Note this function does no additional work towards generating a Discord embed. If the player
-    is not found or has no valid scores, this function returns `None`."""
+    is not found, this function returns `(None, None)`. If no scores are found but the player exists, 
+    `([], 0)` is returned."""
     map_document = await get_map_document(map_id)
+    if not map_document:
+        return (None, None)
     scores = map_document["scores"]
+
+    max_page = math.ceil(len(scores)/10)
     if page < 0:
         page = 1
-    if page > math.ceil(len(scores)/10):
-        #24 scores -> 2.4 -> 3 pages; 40 scores -> 4 -> 4 pages, etc
-        page = math.ceil(len(scores/10))
-    #i am not actually sure if querying based on the list of scores or simply
-    #doing a full query is faster
+    if page > max_page:
+        page = max_page
+
     score_collection = client['matches_and_scores']['scores']
     cursor = score_collection.find({'_id': {'$in': scores}}).sort("score", -1).skip((page-1)*10).limit(10)
-    #check if this actually returns None or [] instead
-    return await cursor.to_list(length=10)
+    return (await cursor.to_list(length=10), max_page)

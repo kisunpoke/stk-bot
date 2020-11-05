@@ -193,7 +193,7 @@ class UserStatsCommands(commands.Cog):
         user = None
         page = 1
         mod = None
-        #determine what each parameter MIGHT be
+        #determine what each parameter MIGHT be, last to first
         for index in range(1,len(params)+1):
             if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
                 #fields in mongodb are case-sensitive
@@ -240,7 +240,7 @@ class UserStatsCommands(commands.Cog):
         team = None
         page = 1
         mod = None
-        #determine what each parameter MIGHT be
+        #determine what each parameter MIGHT be, last to first
         for index in range(1,len(params)+1):
             if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
                 #fields in mongodb are case-sensitive
@@ -274,7 +274,7 @@ class UserStatsCommands(commands.Cog):
         or > the maximum.
         - `pool` is shorthand pool notation (QF, GF, Ro32, etc). Ignored if
         map_id is a beatmap ID."""
-        pass
+        pprint.pprint(await db_get.get_top_map_scores(map_id, page, pool))
 
     @commands.command(aliases=["sbp", "serverbestp"])
     async def serverbest(self, ctx, leaderboard, page=1, mod=None):
