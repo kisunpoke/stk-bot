@@ -13,6 +13,13 @@ class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    #temporary home
+    @commands.command()
+    async def helptest(self, ctx, command):
+        import utils #yes yes i'll move it later
+        embed = await utils.help_generator(command)
+        await ctx.send(embed=embed)
+
     @commands.command()
     async def setuser(self, ctx, *user):
         """Associate this osu! username/id with this Discord ID.
