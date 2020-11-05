@@ -571,9 +571,10 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
 
         match_documents = []
 
+        #this wasn't tested before committing!!!
         for index, game_data in enumerate(api_match_data["games"]):
-            #ignore the first n maps as specified by the match data
-            if index <= int(match[5]):
+            #ignore specific map indexes as specified by the match data
+            if index in [int(map_index) for map_index in match[5].split(",")]:
                 continue
             processed = await osuapi.process_match_data(match[0], index, data=api_match_data, player_ids=player_id_cache)
             if processed == None:
