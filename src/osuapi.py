@@ -213,7 +213,7 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
                 player_name = player_ids[player_score["user_id"]][0]
                 team_name = player_ids[player_score["user_id"]][1]
             except:
-                print(f"Hit MongoDB for player ID {player_score['user_id']}")
+                #print(f"Hit MongoDB for player ID {player_score['user_id']}")
                 player_document = await db_get.get_player_document(player_score['user_id'])
                 if player_document == None:
                     #this means that we don't have this player saved for some reason
