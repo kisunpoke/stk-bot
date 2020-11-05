@@ -84,7 +84,7 @@ class UserStatsCommands(commands.Cog):
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id."""
         if user is None:
-            user = await db_get.get_player_from_user(ctx.message.author.id)
+            user = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
             if not user:
                 await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
                                                      "you're referring to yourself.")
@@ -170,31 +170,58 @@ class UserStatsCommands(commands.Cog):
                     user = " ".join(params[:-(index-1)])
                 break
         if user is None:
-            user = await db_get.get_player_from_user(ctx.message.author.id)
+            user = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
             if not user:
                 await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
                                                      "you're referring to yourself.")
                 return None
-        result = await db_get.get_top_player_scores(user, page, mod)
-            
-
+        pprint.pprint(await db_get.get_top_player_scores(user, page, mod))
 
     @commands.command(aliases=["tb"])
-    async def teambest(self, ctx, page=1, team=None, mod=None):
-        """Post the nth page of a user's best scores, filtered by mod if defined.
+    async def teambest(self, ctx, *params):
+        """Post the nth page of a team's best scores, filtered by mod if defined.
         
+        The default parameter configuration is `playerbest <team> <page> <mod>`, all optional:
+        -`team` is full name of the team to lookup. If not defined, the
+        osu! user (and thus team) associated with the invoker's Discord ID is used. If no team can be
+        associated, then asks the user to use `setuser` or explicitly define the team name.
         -`page` determines what set of 10 scores is returned (1-10, 11-10, ...). See
-        db_get.get_top_player_scores() for more.
-        -`user` is the username or user ID of the player to lookup. If not defined, the
-        osu! user associated with the invoker's Discord ID is used. If no osu! user can be
-        associated, then asks the user to use `setuser` or explicitly define the username.
+        db_get.get_top_player_scores() for more. Page 1 by default.
         -`mod` is the shorthand mod to filter scores by. Valid options are likely
         `["NM", "HR", "HD", "DT", and "FM"]`. Note these mods are associated with shorthand pool
-        IDs, not the *actual* mods played. TB = FM.
+        IDs, not the *actual* mods played. TB = FM. No filter by default (i.e. returns all scores).
         
         (Formally, the database command can take both - however, we probably want map types.
-        Also, freemod doesn't yield individual mods, nor do we check for them.)"""
-        pass
+        Also, freemod doesn't yield individual mods, nor do we check for them.)
+
+        Parameters are checked from last to first until something that is definitely not a mod
+        or a page number is found, at which point that is assumed to be the username. Defaults
+        apply if `team`, `page`, or `mod` wasn't changed by this check."""
+        team = None
+        page = 1
+        mod = None
+        #determine what each parameter MIGHT be
+        for index in range(1,len(params)+1):
+            if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
+                #fields in mongodb are case-sensitive
+                mod = params[-index].upper()
+            elif params[-index].isdigit() and int(params[-index])<1000:
+                page = int(params[-index])
+            else:
+                #the remainder is assumed to be the username, at which point we stop
+                if index == 1:
+                    #slicing from zero doesn't work
+                    team = " ".join(params)
+                else:
+                    team = " ".join(params[:-(index-1)])
+                break
+        if team is None:
+            team = await db_get.get_name_from_user(ctx.message.author.id, return_player=False)
+            if not team:
+                await prompts.error_embed(self, ctx, "I need a team - try `setuser <your osu! username/id>` if "
+                                                     "you're referring to your team.")
+                return None
+        pprint.pprint(await db_get.get_top_team_scores(team, page, mod))
 
     @commands.command(aliases=["sbp", "serverbestp"])
     async def serverbest(self, ctx, leaderboard, page=1, mod=None):
