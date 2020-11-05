@@ -15,7 +15,7 @@ implement text stats (same as above but text-only)
 deployment + integration with env vars
 full match stats under match_commands.py
 better help formatting w/ send_command_help(command) (see docs) - https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.HelpCommand.send_command_help
-^needs examples
+^needs usage examples
 '''
 
 
