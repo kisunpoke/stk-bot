@@ -36,7 +36,7 @@ class UserConfigCommands(commands.Cog):
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
                      "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
                      "can't be registered!")
-            await prompts.error_embed(self, ctx, error)
+            await prompts.error_embed(self.bot, ctx, error)
             return None
         check_msg = (f"Is this you?\n\n"
                      f"osu! username: {player_doc['user_name']}\n"
@@ -51,10 +51,49 @@ class UserConfigCommands(commands.Cog):
                       f"You should now be able to use some stat commands without "
                       f"needing to type in your name or team.")
             await ctx.send(ok_msg)
+
+    @commands.command(aliases=["forgetme", "unset"])
+    async def unsetuser(self, ctx):
+        """Reset all DiscordUser document fields for this user."""
+        user_doc = await db_get.get_user_document(ctx.message.author.id)
+        osu_name = user_doc["osu_name"]
+        if osu_name is None:
+            await prompts.std_embed(self.bot, ctx, "You aren't associated with an osu! player!")
         else:
-            await ctx.send("Aborted.")
+            if await prompts.confirmation_dialog(self.bot, ctx, f"Do you want to stop being {osu_name}?"):
+                user_doc["osu_name"] = None
+                user_doc["osu_id"] = None
+                user_doc["team_name"] = None
+                await db_manip.update_discord_user(ctx.message.author.id, user_doc)
+                await ctx.send(f"Done - you are no longer {osu_name}.")
 
+    @commands.command(aliases=["userinfo", "me"])
+    async def whois(self, ctx, user: discord.Member = None):
+        """Get the osu! player data associated with a user."""
+        if user is None:
+            #implying themselves
+            user_doc = await db_get.get_user_document(ctx.message.author.id)
+        else:
+            user_doc = await db_get.get_user_document(user.id)
 
+        if user_doc["osu_name"] is not None:
+            msg = (f"Information for {user.name}:\n\n"
+                f"osu! username: {user_doc['osu_name']}\n"
+                f"osu! ID: {user_doc['osu_id']}\n"
+                f"Team: {user_doc['team_name']}\n")
+            await prompts.std_embed(self.bot, ctx, msg)
+        else:
+            if user is None:
+                await ctx.send(f"You haven't set your osu! username.")
+            else:
+                await ctx.send(f"{user.name} hasn't set their osu! username.")
+
+    
+    @whois.error
+    async def whois_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await prompts.error_embed(self.bot, ctx, "You need to mention one user (or nobody)!", error)
+    
     @commands.command()
     async def showconfigs(self, ctx):
         """Show the configs associated with this discord ID.
@@ -176,6 +215,7 @@ class UserStatsCommands(commands.Cog):
                                                      "you're referring to yourself.")
                 return None
         pprint.pprint(await db_get.get_top_player_scores(user, page, mod))
+        #rendering goes here
 
     @commands.command(aliases=["tb"])
     async def teambest(self, ctx, *params):
@@ -222,6 +262,19 @@ class UserStatsCommands(commands.Cog):
                                                      "you're referring to your team.")
                 return None
         pprint.pprint(await db_get.get_top_team_scores(team, page, mod))
+        #rendering goes here
+
+    @commands.command(aliases=["mb"])
+    async def mapbest(self, ctx, map_id, page=1, pool=None):
+        """Post the nth page of a map's best scores.
+        
+        - `map_id` can either be a beatmap ID (b/...) or standard notation
+        (NM1, HR2, etc.)
+        - `page` works the same as every similar command; 10 per page, redirects for <1
+        or > the maximum.
+        - `pool` is shorthand pool notation (QF, GF, Ro32, etc). Ignored if
+        map_id is a beatmap ID."""
+        pass
 
     @commands.command(aliases=["sbp", "serverbestp"])
     async def serverbest(self, ctx, leaderboard, page=1, mod=None):
