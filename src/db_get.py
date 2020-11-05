@@ -320,6 +320,7 @@ async def get_top_tournament_teams(leaderboard_field="score", page=1):
         "acc": "cached.average_acc",
     }
     #if leaderboard_field not in fields return None ?
+    #we can just do command-level validation
 
     cursor = team_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
     return (await cursor.to_list(length=10), max_page)

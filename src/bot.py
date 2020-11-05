@@ -2,29 +2,20 @@
 import discord
 from discord.ext import commands
 
-import admin_commands
+import staff_commands
 import match_commands
 import user_commands
 
-'''timeline:
+'''to do:
 
-
-implement per-mod cached
-
-ability to hold session prefs (current mappool, image generation disabled, scorewatch interval)
-implement player text stats and scores
-team text stats and scores
-player card?
-image version of player scores
-team card?
-image version of team scores
-map stats (text)
-matplot score histogram
-map leaderboard (text)
-map stats (image)
-map leaderboard(image)
-match game (text), per individual map
-match stats (text), overall match details
+change db_manip to accept a list of maps to ignore, rather than just the first n
+implement cards (render leaderboards, player stats, team stats, etc)
+implement text stats (same as above but text-only)
+/tmp for downloaded assets
+deployment + integration with env vars
+full match stats under match_commands.py
+better help formatting w/ send_command_help(command) (see docs) - https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.HelpCommand.send_command_help
+^needs examples
 '''
 
 
@@ -33,7 +24,8 @@ token = open("token").read()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 
-bot.add_cog(admin_commands.AdminDatabaseCommands(bot))
+bot.add_cog(staff_commands.AdminDatabaseCommands(bot))
+bot.add_cog(staff_commands.StaffCommands(bot))
 bot.add_cog(match_commands.MatchCommands(bot))
 bot.add_cog(user_commands.UserConfigCommands(bot))
 bot.add_cog(user_commands.UserStatsCommands(bot))

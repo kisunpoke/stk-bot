@@ -77,7 +77,7 @@ class UserConfigCommands(commands.Cog):
             user_doc = await db_get.get_user_document(user.id)
 
         if user_doc["osu_name"] is not None:
-            msg = (f"Information for {user.name}:\n\n"
+            msg = (f"Information for {user.display_name}:\n\n"
                 f"osu! username: {user_doc['osu_name']}\n"
                 f"osu! ID: {user_doc['osu_id']}\n"
                 f"Team: {user_doc['team_name']}\n")
@@ -86,7 +86,7 @@ class UserConfigCommands(commands.Cog):
             if user is None:
                 await ctx.send(f"You haven't set your osu! username.")
             else:
-                await ctx.send(f"{user.name} hasn't set their osu! username.")
+                await ctx.send(f"{user.display_name} hasn't set their osu! username.")
 
     
     @whois.error
@@ -111,7 +111,11 @@ class UserConfigCommands(commands.Cog):
         pass
 
 class UserStatsCommands(commands.Cog):
-    #except for matches, of course...
+    """Commands for all stats except individual matches.
+    
+    (This is because the match stats cog is partially tournament-independent, unlike
+    these which don't really make sense without a tournament)
+    """
     def __init__(self, bot):
         self.bot = bot
     

@@ -159,7 +159,11 @@ class MatchCommands(commands.Cog):
             '''
             pass
 
+    #if someone really wants to watch a match, just look at mp link or stream instead lol
+    #https://github.com/Rapptz/discord.py/blob/master/examples/background_task.py for future implementation
+    '''
     @commands.command()
     async def trackmatch(self, ctx, match, map=1):
         """Start tracking a match, returning embeds similar to `getmatch()` with an index."""
         pass
+    '''
