@@ -166,6 +166,7 @@ The cluster structure is as follows:
                 maps_played: int
                 maps_won: int
                 maps_lost: int
+                total_scores: int #unused, because is same as maps_played
                 average_acc: double
                 base_acc: double
                 average_score: double
@@ -209,6 +210,7 @@ The cluster structure is as follows:
                 maps_played: int
                 maps_won: int
                 maps_lost: int
+                total_scores: int
                 average_acc: double
                 base_acc: double
                 average_score: double
@@ -409,6 +411,7 @@ async def add_players_and_teams(player_data, *, create_index=False):
         "maps_played": 0,
         "maps_won": 0,
         "maps_lost": 0,
+        "total_scores": 0,
         "average_acc": 0.00,
         "base_acc": 0.00,
         "average_score": 0.00,
@@ -799,8 +802,6 @@ async def update_team_stats(team_dict):
                     stat['maps_won'] += 1
                 elif score['score_difference'] < 0:
                     stat['maps_lost'] += 1
-                #formatted match_id-match_index, always unique per individual map played
-                processed_maps.append(score['match_id']+str(score['match_index']))
             stat['hits']['300_count'] += score['hits']['300_count']
             stat['hits']['100_count'] += score['hits']['100_count']
             stat['hits']['50_count'] += score['hits']['50_count']
@@ -813,12 +814,16 @@ async def update_team_stats(team_dict):
                 mod_stat = stat['by_mod'][score['map_type']]
             mod_stat['base_acc'] += score['accuracy']
             mod_stat['base_score'] += score['score']
+            mod_stat['total_scores'] += 1
             
-            mod_stat['maps_played'] += 1
-            if score['score_difference'] > 0:
-                mod_stat['maps_won'] += 1
-            elif score['score_difference'] < 0:
-                mod_stat['maps_lost'] += 1
+            if score['match_id']+str(score['match_index']) not in processed_maps:
+                mod_stat['maps_played'] += 1
+                if score['score_difference'] > 0:
+                    mod_stat['maps_won'] += 1
+                elif score['score_difference'] < 0:
+                    mod_stat['maps_lost'] += 1
+                #formatted match_id-match_index, always unique per individual map played
+                processed_maps.append(score['match_id']+str(score['match_index']))
 
             #add score id 
             team_document['scores'].append(score['_id'])
@@ -832,8 +837,8 @@ async def update_team_stats(team_dict):
         for mod in stat['by_mod']:
             mod_stat = stat['by_mod'][mod]
             if mod_stat['maps_played'] != 0:
-                mod_stat['average_acc'] = mod_stat['base_acc'] / mod_stat['maps_played'] 
-                mod_stat['average_score'] = mod_stat['base_score'] / mod_stat['maps_played'] 
+                mod_stat['average_acc'] = mod_stat['base_acc'] / mod_stat['total_scores'] 
+                mod_stat['average_score'] = mod_stat['base_score'] / mod_stat['total_scores'] 
 
         #pprint.pprint(team_document)
         
