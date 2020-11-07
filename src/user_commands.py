@@ -193,6 +193,7 @@ class UserStatsCommands(commands.Cog):
                 await prompts.error_embed(self, ctx, "I need a team name (or set your team with `setuser`)!")
             else:
                 team_doc = await db_get.get_team_document(team_name)
+        await ctx.trigger_typing()
         image_object = await image_manip.make_team_card(team_doc)
         await ctx.send(file=discord.File(fp=image_object, filename='team_stats_team_name.png'))
 
