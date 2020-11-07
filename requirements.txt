@@ -4,6 +4,7 @@ attrs==20.1.0
 cachetools==4.1.1
 certifi==2020.6.20
 chardet==3.0.4
+cycler==0.10.0
 discord.py==1.4.1
 dnspython==2.0.0
 google-api-core==1.22.2
@@ -14,14 +15,19 @@ google-auth-oauthlib==0.4.1
 googleapis-common-protos==1.52.0
 httplib2==0.18.1
 idna==2.10
+kiwisolver==1.3.1
+matplotlib==3.3.2
 motor==2.2.0
 multidict==4.7.6
+numpy==1.19.3
 oauthlib==3.1.0
 Pillow==8.0.1
 protobuf==3.13.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pymongo==3.11.0
+pyparsing==2.4.7
+python-dateutil==2.8.1
 pytz==2020.1
 requests==2.24.0
 requests-oauthlib==1.3.0
