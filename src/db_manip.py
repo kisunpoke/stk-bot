@@ -824,8 +824,9 @@ async def update_team_stats(team_dict):
             team_document['scores'].append(score['_id'])
         
         #recalculate baselines back to an average
-        stat['average_acc'] = stat['base_acc'] / stat['maps_played'] 
-        stat['average_score'] = stat['base_score'] / stat['maps_played'] 
+        #the team size (in an individual map)
+        stat['average_acc'] = stat['base_acc'] / stat['maps_played'] / 2
+        stat['average_score'] = stat['base_score'] / stat['maps_played'] / 2
 
         #then for mods as well
         for mod in stat['by_mod']:
