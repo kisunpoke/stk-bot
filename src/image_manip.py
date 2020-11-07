@@ -4,6 +4,7 @@ Includes team/player card generation and image-based statistics as needed.
 """
 #https://stackoverflow.com/questions/33101935/convert-pil-image-to-byte-array
 from PIL import Image, ImageFont, ImageDraw
+import matplotlib.pyplot as plt
 import io
 
 import db_get
@@ -30,15 +31,14 @@ async def make_player_card(player):
         img_binary.seek(0)
         return img_binary
 '''
-
+#as with the other functions, this takes team_doc rather than team_name to
+#allow for validation at the command level (rather than returning None from this function)
+#this function should always be expected to return the filelike
 async def make_team_card(team_doc):
-    #note: team_doc has no implementation
-    #team_doc is not found here to allow for validation at the command level
     """Generate and return a team card (as a discord.py-compatible image) based on a team document."""
     def draw_std(x, y, text, font="m"):
         #looool
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
-
     stat = team_doc['cached']
 
     player_card_base_img_fp = "src/static/team-bg.png"
@@ -85,10 +85,32 @@ async def make_team_card(team_doc):
         draw_std(702, row_pos[i], percentage(mod_stat["average_acc"])) #average acc
         draw_std(840, row_pos[i], "-")#average contrib - unused for teams
 
-    #right plot
-    #unimp.
+    #pie chart
+    #note: iterating over stat["by_mod"] works because dicts are insertion-ordered in python
+    #since in db_manip we insert them in a certain order
+    #otherwise the colors would be wrong if, for example, stat["by_mod"] returned the mod names
+    #alphabetically ordered
+    #you may want to hardcode the mod list instead of using stat["by_mod"] if the colors are jank
+    data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
+    print(data)
+    colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
 
-    #i guess you have to seek before you actually do the thing
+    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
+    ax1.pie(data, colors=colors)
+    ax1.axis('equal')
+
+    #to binary and into pillow
+    #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+    plt_binary = io.BytesIO()
+    plt.savefig(plt_binary, format='png', transparent=True)
+    plt_binary.seek(0)
+    plt_img = Image.open(plt_binary)
+
+    #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
+    #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
+    img.paste(plt_img, (918, 382), plt_img)
+
+    #you need to seek to 0 for it to work:
     #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
     #file-like object
     img_binary = io.BytesIO()
