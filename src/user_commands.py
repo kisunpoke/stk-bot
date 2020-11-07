@@ -8,6 +8,7 @@ import osuapi
 import db_get
 import db_manip
 import prompts
+import image_manip
 
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
@@ -180,7 +181,8 @@ class UserStatsCommands(commands.Cog):
         If no team is defined, then it is assumed to be the one associated with that
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id, which implicitly associates them with a team."""
-        pass
+        image_object = await image_manip.make_team_card("E")
+        await ctx.send(file=discord.File(fp=image_object, filename='team_stats_team_name.png'))
 
     @commands.command(aliases=["pb"])
     async def playerbest(self, ctx, *params):
