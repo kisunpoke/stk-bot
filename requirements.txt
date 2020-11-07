@@ -17,7 +17,7 @@ idna==2.10
 motor==2.2.0
 multidict==4.7.6
 oauthlib==3.1.0
-Pillow==7.2.0
+Pillow==8.0.1
 protobuf==3.13.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
