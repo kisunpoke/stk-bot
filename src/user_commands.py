@@ -181,7 +181,19 @@ class UserStatsCommands(commands.Cog):
         If no team is defined, then it is assumed to be the one associated with that
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id, which implicitly associates them with a team."""
-        image_object = await image_manip.make_team_card("E")
+        team_name = " ".join(team)
+        if team_name:
+            team_doc = await db_get.get_team_document(team_name)
+            if not team_doc:
+                await prompts.error_embed(self, ctx, "Couldn't find that team...")
+                return None
+        else:
+            team_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=False)
+            if not team_name:
+                await prompts.error_embed(self, ctx, "I need a team name (or set your team with `setuser`)!")
+            else:
+                team_doc = await db_get.get_team_document(team_name)
+        image_object = await image_manip.make_team_card(team_doc)
         await ctx.send(file=discord.File(fp=image_object, filename='team_stats_team_name.png'))
 
     @commands.command(aliases=["pb"])
