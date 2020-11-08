@@ -18,6 +18,7 @@ implement text stats (same as above but text-only)
 ^for leaderboards, show where the user stands on any given page
 /tmp for downloaded assets
 deployment + integration with env vars
+argparser for UserStatsCommands
 better help formatting w/ send_command_help(command) (see docs) - https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.HelpCommand.send_command_help
 ^needs usage examples
 

@@ -305,7 +305,7 @@ class UserStatsCommands(commands.Cog):
         map_id is a beatmap ID."""
         pprint.pprint(await db_get.get_top_map_scores(map_id, page, pool))
 
-    @commands.command(aliases=["sbp", "serverbestp"])
+    @commands.command(aliases=["sb"])
     async def serverbest(self, ctx, leaderboard="score", page=1, mod=None):
         """Post the leaderboard rankings of every score.
         
@@ -315,16 +315,16 @@ class UserStatsCommands(commands.Cog):
         - `mod` can be any of ["NM", "HD", "HR", "DT", or "FM"]."""
         pprint.pprint(await db_get.get_top_tournament_scores(leaderboard, page, mod))
 
-    @commands.command(aliases=["avglbp", "averagelbp"])
-    async def averageleaderboardp(self, ctx, leaderboard="score", page=1):
+    @commands.command(aliases=["avglbp", "averageleaderboardp"])
+    async def averagelbp(self, ctx, leaderboard="score", page=1):
         """Get the best players of the given statistic.
         
         -`leaderboard` is any of "acc", "score", or "contrib". 
         -`page` works the same as every other paginated command.""" 
         pprint.pprint(await db_get.get_top_tournament_players(leaderboard, page))
 
-    @commands.command(aliases=["avglbt", "averagelbt"])
-    async def averageleaderboardt(self, ctx, leaderboard="score", page=1):
+    @commands.command(aliases=["avglbt", "averageleaderboardt"])
+    async def averagelbt(self, ctx, leaderboard="score", page=1):
         """Get the best teams of the given statistic.
         
         `leaderboard` is either "acc" or "score". `page` works
