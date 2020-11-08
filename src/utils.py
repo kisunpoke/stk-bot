@@ -1,8 +1,5 @@
-"""stuff that doesn't fit anywhere right now, including help (which might get split into its own cog)"""
+"""general-purpose things that don't fit anywhere"""
 
-import discord
-
-#yes zzz but shut
 def percentage(value, precision=2):
     """Convert `float` to #.##% notation as `str`.
     
