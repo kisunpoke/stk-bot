@@ -9,17 +9,11 @@ import db_get
 import db_manip
 import prompts
 import image_manip
+from utils import percentage, comma_sep
 
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    #temporary home
-    @commands.command()
-    async def helptest(self, ctx, command):
-        import utils #yes yes i'll move it later
-        embed = await utils.help_generator(command)
-        await ctx.send(embed=embed)
 
     @commands.command()
     async def setuser(self, ctx, *user):
@@ -118,7 +112,6 @@ class UserConfigCommands(commands.Cog):
         If this command is run without the discord ID already existing in the
         database, then a DiscordUser document is created."""
         pass
-
 class UserStatsCommands(commands.Cog):
     """Commands for all stats except individual matches.
     
@@ -129,24 +122,54 @@ class UserStatsCommands(commands.Cog):
         self.bot = bot
     
     @commands.command(aliases=["ps"])
-    async def playerstats(self, ctx, *user):
+    async def playerstats(self, ctx, *player):
         """Post the stats of a user.
         
         If no user is defined, then it is assumed to be the one associated with that
         Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
         themselves with a username/user id."""
-        if not user:
-            user = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
+        player_name = " ".join(player)
+        if not player_name:
+            player_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
             #means this discord user doesn't have any name set
-            if not user:
+            if not player_name:
                 await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
                                                      "you're referring to yourself.")
                 return None
-        player_document = await db_get.get_player_document(user)
+        player_doc = await db_get.get_player_document(player_name)
+        if player_doc is None:
+            error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
+                     "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
+                     "don't have stats! (Also, I don't know if you've had a username change until "
+                     "I'm updated!)")
+            await prompts.error_embed(self, ctx, error)
+            return None
+        await ctx.trigger_typing()
+        image_object = await image_manip.make_player_card(player_doc)
+        await ctx.send(file=discord.File(fp=image_object, filename=f'player_stats_{player_name}.png'))
+
+    #old implementation - kept for comparison purposes but not documented
+    @commands.command(hidden=True)
+    async def playerstatsold(self, ctx, *user):
+        """Post the stats of a user.
+        
+        If no user is defined, then it is assumed to be the one associated with that
+        Discord ID. If the invoker has no associated osu! user, tells the invoker to associate
+        themselves with a username/user id."""
+        player_name = " ".join(user)
+        if not player_name:
+            player_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
+            #means this discord user doesn't have any name set
+            if not player_name:
+                await prompts.error_embed(self, ctx, "I need a name - try `setuser <your osu! username/id>` if "
+                                                     "you're referring to yourself.")
+                return None
+        player_document = await db_get.get_player_document(player_name)
         if player_document is None:
             error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
                      "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
-                     "don't have stats! (Also, I don't know if you've had a username change!)")
+                     "don't have stats! (Also, I don't know if you've had a username change until "
+                     "I'm updated!)")
             await prompts.error_embed(self, ctx, error)
             return None
         player_url = f'https://osu.ppy.sh/u/{player_document["_id"]}'
@@ -156,18 +179,18 @@ class UserStatsCommands(commands.Cog):
         msg = (f"STK8 stats for {player_document['user_name']}\n"
                f"\n"
                f"__Averages__\n"
-               f"**Avg. Score:** {stat['average_score']} (#{stat['score_rank']})\n"
-               f"**Avg. Accuracy:** {stat['average_acc']} (#{stat['acc_rank']})\n"
-               f"**Avg. Contrib:** {stat['average_contrib']} (#{stat['contrib_rank']})\n"
+               f"**Avg. Score:** {comma_sep(stat['average_score'])} (#{stat['score_rank']})\n"
+               f"**Avg. Accuracy:** {percentage(stat['average_acc'])} (#{stat['acc_rank']})\n"
+               f"**Avg. Contrib:** {percentage(stat['average_contrib'])} (#{stat['contrib_rank']})\n"
                f"\n"
                f"__General__\n"
-               f"**Hits (300/100/50/miss):** {stat['hits']['300_count']}/{stat['hits']['50_count']}/"
-               f"{stat['hits']['100_count']}/{stat['hits']['miss_count']}\n"
+               f"**Hits (300/100/50/miss):** {comma_sep(stat['hits']['300_count'])}/{comma_sep(stat['hits']['100_count'])}/"
+               f"{comma_sep(stat['hits']['50_count'])}/{comma_sep(stat['hits']['miss_count'])}\n"
                f"**Maps played:** {stat['maps_played']} (W/L: {stat['maps_won']}/{stat['maps_lost']}, "
-               f"{'{:.2%}'.format(stat['maps_won']/stat['maps_played'])})\n"
+               f"{comma_sep(stat['maps_won']/stat['maps_played'])})\n"
                f"\n"
                f"__Mod Information__\n"
-               f"sorry i forgot we don't have the technology for that yet lmao")
+               f"sorry i forgot we don't have the technology for that yet")
         em_msg = discord.Embed(description=msg)
         em_msg.set_author(name=player_document["user_name"], url=player_url)
         em_msg.set_thumbnail(url=player_document["pfp_url"])
@@ -196,7 +219,7 @@ class UserStatsCommands(commands.Cog):
                 team_doc = await db_get.get_team_document(team_name)
         await ctx.trigger_typing()
         image_object = await image_manip.make_team_card(team_doc)
-        await ctx.send(file=discord.File(fp=image_object, filename='team_stats_team_name.png'))
+        await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{team_name}.png'))
 
     @commands.command(aliases=["pb"])
     async def playerbest(self, ctx, *params):

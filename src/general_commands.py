@@ -21,6 +21,10 @@ class GeneralCommands(commands.Cog):
                 await ctx.send(embed=help_embed)
         else:
             await ctx.send(embed=await default_help())
+    
+    @commands.command()
+    async def about(self, ctx):
+        pass
 
 #i am not sure where else i should be putting this
 
