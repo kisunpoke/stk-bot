@@ -78,7 +78,6 @@ class UserConfigCommands(commands.Cog):
     @commands.command(aliases=["userinfo", "me"])
     async def whois(self, ctx, user: discord.Member = None):
         """Get the osu! player data associated with a user."""
-        print(user)
         if user is None:
             #implying themselves
             user_doc = await db_get.get_user_document(ctx.message.author.id)

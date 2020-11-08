@@ -21,6 +21,9 @@ deployment + integration with env vars
 argparser for UserStatsCommands
 better help formatting w/ send_command_help(command) (see docs) - https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.ext.commands.HelpCommand.send_command_help
 ^needs usage examples
+^needs aliases to be redirected to the full-length command as well
+https://stackoverflow.com/questions/45951224/how-to-remove-default-help-command-or-change-the-format-of-it-in-discord-py
+list of pools?
 
 '''
 
