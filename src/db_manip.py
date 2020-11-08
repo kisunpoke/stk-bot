@@ -239,9 +239,11 @@ import motor.motor_asyncio
 import pprint
 import collections
 import os
+import asyncio
 
 import osuapi
 import db_get
+import prompts
 
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
@@ -1020,13 +1022,18 @@ async def update_ranks():
 
     #there were some alternate methods, but this is the one i understand best
 
-async def get_all_gsheet_data(sheet_id):
-    #this will (should?) block the bot during execution
-    #however, this is desired as we don't want other things to happen while we're doing this
+async def get_all_gsheet_data(bot, ctx, sheet_id):
+    """Get all GSheet data from the target sheet and run the OAuth flow if needed.
+    
+    While perhaps not the most secure way to be executing the flow, we use Discord for
+    the authorization prompt as well as the access code entry. This is why `bot` and `ctx` are
+    needed."""
+    #theoretically we'll need this practically never so imports occur here
+    #if we find a need to regularly rebuild databases from gsheets, then we can move this out
     import pickle
     import os.path
     from googleapiclient.discovery import build
-    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google_auth_oauthlib.flow import Flow
     from google.auth.transport.requests import Request
 
     # If modifying these scopes, delete the file token.pickle.
@@ -1040,17 +1047,70 @@ async def get_all_gsheet_data(sheet_id):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     # If there are no (valid) credentials available, let the user log in.
+    #derived from https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'google-credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            #https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.Flow.from_client_secrets_file
+            #creates the flow instance
+            flow = Flow.from_client_secrets_file(
+                'google-credentials.json', SCOPES, redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+
+            #generate authorization url, the first step in oauth
+            auth_url, _ = flow.authorization_url(prompt='consent')
+
+            #inform the original invoker that this process has started.
+            await ctx.send("Authorization is needed and the process has started. "
+                           "(go to the channel that should've just pinged you - "
+                           "if you weren't mentioned anywhere you shouldn't be using this)"
+                           " You have 1 minute.")
+
+            #send the url to a restricted chat
+            #this chat should already be limited to people with access to the main google account/the sheet
+            #this "restricted chat" thing might not be needed (especially if the sheet this bot's data will be based on is public)
+            #but i'd say it doesn't hurt to hide things from people who don't need them 
+            auth_channel = bot.get_channel(774881438817845289) #have this in the bot's meta document so it isn't hardcoded in the future
+            auth_msg = await auth_channel.send(f'{ctx.message.author.mention}\n\n'
+                                               f'An authorization event has been triggered. Please go to this URL: {auth_url}'
+                                               f' and complete the process. Type the access code as your next message.'
+                                               f' (Note: you need to complete this on the same account that has access to the'
+                                               f' sheet ID you just entered!) You have 1 minute.')
+
+            #wait for user response
+            def check(m):
+                return m.channel.id==774881438817845289
+
+            try:
+                msg = await bot.wait_for('message', timeout=60.0, check=check)
+                await auth_msg.delete()
+            except asyncio.TimeoutError:
+                #delete to make sure it's clear the process must be restarted
+                await auth_msg.delete()
+                await auth_channel.send('Response timed out. Run through this process again.')
+                #send to original invoking channel 
+                await ctx.send("The authorization process failed.")
+                return None
+            else:
+                if await prompts.confirmation_dialog(bot, ctx, f"Are you **SURE** this is the correct token?\n{msg.content}"):
+                    flow.fetch_token(code=msg.content)
+                    await ctx.send("The authorization process succeded; you should start seeing more msgs now")
+                else:
+                    await auth_channel.send("Ok. Start over.")
+                    #send to original invoking channel 
+                    await ctx.send("The authorization process failed.")
+                    return None
+
+            #flow.credentials can only be run AFTER fetch_token is called
+            creds = flow.credentials
+            #creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
+    #https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build
+    #creds should be of type google.auth.credentials.Credentials, which is returned by flow.credentials
     service = build('sheets', 'v4', credentials=creds)
 
     # Call the Sheets API
@@ -1081,7 +1141,7 @@ async def get_all_gsheet_data(sheet_id):
         '''
     return output
 
-async def rebuild_all(sheet_id, ctx):
+async def rebuild_all(bot, ctx, sheet_id):
     """Drops ALL non-test databases, then rebuilds them using gsheet data.
     
     This DOES NOT drop the discord_users database."""
@@ -1093,7 +1153,7 @@ async def rebuild_all(sheet_id, ctx):
         await client.drop_database(database)
         print("dropped %s"%database)
     await ctx.send(f"getting gsheet info... (2/{steps})")
-    data = await get_all_gsheet_data(sheet_id)
+    data = await get_all_gsheet_data(bot, ctx, sheet_id)
     await ctx.send(f"building meta db (3/{steps})")
     await add_meta(data['meta'])
     await ctx.send(f"building mappool db (4/{steps})")

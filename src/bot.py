@@ -5,7 +5,7 @@ from discord.ext import commands
 import os
 #checks if in development or deployment
 #config var on heroku is on_heroku=TRUE
-#os.getenv() instead of os.environ[] because using os.environ will return KeyError
+#os.getenv() instead of os.environ[] because using os.environ will return KeyError, getenv() returns None
 if os.getenv("on_heroku") != "TRUE":
     from dotenv import load_dotenv
     load_dotenv()
@@ -31,6 +31,8 @@ argparser for UserStatsCommands
 about command for bot
 list of pools?
 proper error handling
+make the secure channel in db_manip not hardcoded
+
 '''
 
 token = os.getenv("bot_token")

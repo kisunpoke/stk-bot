@@ -111,7 +111,7 @@ class AdminDatabaseCommands(commands.Cog):
         if sheet_id is not None:
             if await prompts.confirmation_dialog(self.bot, ctx, "Rebuild all?"):
                 await ctx.send("ok, processing")
-                await db_manip.rebuild_all(sheet_id, ctx)
+                await db_manip.rebuild_all(self.bot, ctx, sheet_id)
         else:
             msg = ("hardcoded IDs:\n"
                    "STK8 data (full): 1OfLrz4o-Qt5k_JvpVl8CSiZsRt-veiFlFkuG8G0BnzU\n"
