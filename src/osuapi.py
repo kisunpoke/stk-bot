@@ -5,11 +5,12 @@ necessary.
 """
 import aiohttp
 from enum import IntFlag
+import os
 
 import db_manip
 import db_get
 
-api_key = open("osukey").read()
+api_key = os.getenv("osu_key")
 
 class Mods(IntFlag):
     """Enum of the osu! mods exposed by the API.

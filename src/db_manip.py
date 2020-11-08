@@ -238,6 +238,7 @@ also all accuracy is stored internally as a double from 0 to 1; they are not sto
 import motor.motor_asyncio
 import pprint
 import collections
+import os
 
 import osuapi
 import db_get
@@ -245,7 +246,7 @@ import db_get
 #to implement pagination we can use cursor.skip()
 #see https://docs.mongodb.com/manual/reference/method/cursor.skip/
 #and https://stackoverflow.com/questions/57159663/mongodb-get-element-in-the-middle-of-a-find-sort-result-using-nodejs-native-driv
-db_url = open("dburl").read()
+db_url = os.getenv("db_url")
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
@@ -1044,7 +1045,7 @@ async def get_all_gsheet_data(sheet_id):
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                'google-credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:

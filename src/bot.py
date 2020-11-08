@@ -2,6 +2,14 @@
 import discord
 from discord.ext import commands
 
+import os
+#checks if in development or deployment
+#config var on heroku is on_heroku=TRUE
+#os.getenv() instead of os.environ[] because using os.environ will return KeyError
+if os.getenv("on_heroku") != "TRUE":
+    from dotenv import load_dotenv
+    load_dotenv()
+
 import general_commands
 import staff_commands
 import match_commands
@@ -25,9 +33,7 @@ list of pools?
 proper error handling
 '''
 
-
-#use environment variables for these later
-token = open("token").read()
+token = os.getenv("bot_token")
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 

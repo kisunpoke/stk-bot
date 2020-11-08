@@ -4,11 +4,12 @@ import motor.motor_asyncio
 import pprint
 import collections
 import math
+import os
 
 import osuapi
 import db_manip
 
-db_url = open("dburl").read()
+db_url = os.getenv("db_url")
 
 client = motor.motor_asyncio.AsyncIOMotorClient(db_url)
 
