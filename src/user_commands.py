@@ -78,6 +78,7 @@ class UserConfigCommands(commands.Cog):
     @commands.command(aliases=["userinfo", "me"])
     async def whois(self, ctx, user: discord.Member = None):
         """Get the osu! player data associated with a user."""
+        print(user)
         if user is None:
             #implying themselves
             user_doc = await db_get.get_user_document(ctx.message.author.id)
@@ -85,7 +86,8 @@ class UserConfigCommands(commands.Cog):
             user_doc = await db_get.get_user_document(user.id)
 
         if user_doc["osu_name"] is not None:
-            msg = (f"Information for {user.display_name}:\n\n"
+            display_name = ctx.message.author.display_name if user==None else user.display_name
+            msg = (f"Information for {display_name}:\n\n"
                 f"osu! username: {user_doc['osu_name']}\n"
                 f"osu! ID: {user_doc['osu_id']}\n"
                 f"Team: {user_doc['team_name']}\n")
