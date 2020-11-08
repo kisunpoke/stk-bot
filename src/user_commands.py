@@ -187,7 +187,7 @@ class UserStatsCommands(commands.Cog):
                f"**Hits (300/100/50/miss):** {comma_sep(stat['hits']['300_count'])}/{comma_sep(stat['hits']['100_count'])}/"
                f"{comma_sep(stat['hits']['50_count'])}/{comma_sep(stat['hits']['miss_count'])}\n"
                f"**Maps played:** {stat['maps_played']} (W/L: {stat['maps_won']}/{stat['maps_lost']}, "
-               f"{comma_sep(stat['maps_won']/stat['maps_played'])})\n"
+               f"{percentage(stat['maps_won']/stat['maps_played'])})\n"
                f"\n"
                f"__Mod Information__\n"
                f"sorry i forgot we don't have the technology for that yet")

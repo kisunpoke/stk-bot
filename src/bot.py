@@ -16,14 +16,13 @@ match adding
 full match stats under match_commands.py
 implement cards (render leaderboards, player stats, team stats, etc)
 implement text stats (same as above but text-only)
-^for leaderboards, show where the user stands on any given page
+for leaderboards, show where the user stands on any given page
 /tmp for downloaded assets
 deployment + integration with env vars
 argparser for UserStatsCommands
 about command for bot
-https://stackoverflow.com/questions/45951224/how-to-remove-default-help-command-or-change-the-format-of-it-in-discord-py
 list of pools?
-
+proper error handling
 '''
 
 
