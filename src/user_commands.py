@@ -240,8 +240,8 @@ class UserStatsCommands(commands.Cog):
                     player_name = " ".join(params[:-(index-1)])
                 break
         if player_name:
-            player_doc = await db_get.get_player_document(player_name)
-            if not player_doc:
+            score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
+            if not score_docs:
                 error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
                          "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
                          "don't have stats! (Also, I don't know if you've had a username change until "
@@ -254,9 +254,9 @@ class UserStatsCommands(commands.Cog):
                 await prompts.error_embed(self, ctx, "I need a player name (or set your name with `setuser`)!")
                 return None
             else:
-                player_doc = await db_get.get_player_document(player_name)
+                score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
         await ctx.trigger_typing()
-        image_object = await image_manip.make_player_best(player_doc)
+        image_object = await image_manip.make_player_best(score_docs, page, max_page)
         await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{player_name}.png'))
 
     @commands.command(aliases=["tc"])
@@ -344,8 +344,8 @@ class UserStatsCommands(commands.Cog):
                     team_name = " ".join(params[:-(index-1)])
                 break
         if team_name:
-            team_doc = await db_get.get_team_document(team_name)
-            if not team_doc:
+            score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
+            if not score_docs:
                 await prompts.error_embed(self, ctx, "Couldn't find that team...")
                 return None
         else:
@@ -354,9 +354,9 @@ class UserStatsCommands(commands.Cog):
                 await prompts.error_embed(self, ctx, "I need a team name (or set your team with `setuser`)!")
                 return None
             else:
-                team_doc = await db_get.get_team_document(team_name)
+                score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
         await ctx.trigger_typing()
-        image_object = await image_manip.make_team_best("")
+        image_object = await image_manip.make_team_best(score_docs, page, max_page)
         await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{team_name}.png'))
     
     @commands.command(aliases=["ms"])

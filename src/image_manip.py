@@ -17,11 +17,11 @@ fonts = {
     "l": ImageFont.truetype("src/static/Renogare-Regular.otf", 40)
 }
 
-async def make_team_best(score_docs):
+async def make_team_best(score_docs, current_page, max_page):
     """Generate and return a team score leaderboard(as a discord.py-compatible image)."""
     def draw_std(x, y, text, font="m"):
         #looool
-        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
 
     def truncate(text, font="m"):
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
@@ -164,11 +164,11 @@ async def make_team_card(team_doc):
     img_binary.seek(0)
     return img_binary
 
-async def make_player_best(score_docs):
+async def make_player_best(score_docs, current_page, max_page):
     """Generate and return a player score leaderboard (as a discord.py-compatible image)."""
     def draw_std(x, y, text, font="m"):
         #looool
-        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
 
     def truncate(text, font="m"):
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
@@ -185,20 +185,19 @@ async def make_player_best(score_docs):
                 width, _ = font.getsize(text)
             text += "..."
         return text
-
     player_card_base_img_fp = "src/static/playerbest.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
 
     #header
-    draw_std(640, 65, "player name", "l") #player
-    draw_std(640, 105, "team name") #team name
+    player_doc = await db_get.get_player_document(score_docs[0]["user_id"])
+    draw_std(640, 65, player_doc["user_name"], "l") #player
+    draw_std(640, 105, player_doc["team_name"]) #team name
 
     #page number
-    draw.text((36, 137), "(page 1 of 1)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+    draw.text((36, 137), f"(page {current_page} of {max_page})", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
 
-    data = [1,2,3,4,5,6,7,8,9,10]
     colors = {
         "NM":(165,165,165),
         "HD":(255,192,0),
@@ -208,22 +207,28 @@ async def make_player_best(score_docs):
     }
     #table
     #x-dists: 70,116(left),266,876,1035,1172
-    #y-dist: 39 each row
-    for row in range(0,len(data)):
+    #y-dist: 39 each row, starting from 216
+    for row, score in enumerate(score_docs):
         banner_fp = "src/static/map-banners/cover.jpg"
         banner = Image.open(banner_fp, mode='r')
         banner = banner.resize((139,37))
 
         y_pos = (row*39)+216
-        draw_std(70, y_pos, "1") #numerical ranking
+
+        draw_std(70, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        
         #tuple refers to top-left corner, so half the banner's height is subtracted
         img.paste(banner, (117,y_pos-19)) #map banner
-        draw.line([257,y_pos-19,257,y_pos+19], colors["HR"], 5) #modline
-        draw.text((267, y_pos), truncate("text"), (255, 255, 255), font=fonts["m"],
+        draw.line([257,y_pos-19,257,y_pos+19], colors[score["map_type"]], 5) #modline
+        map_doc = await db_get.get_map_document(score["diff_id"])
+        meta = map_doc["meta"]
+        full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
+        draw.text((267, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
                    align='left', anchor="lm") #map name
-        draw_std(876, y_pos, "9,999") #score
-        draw_std(1035, y_pos, "9,999") #acc
-        draw_std(1172, y_pos, "9,999") #combo
+
+        draw_std(876, y_pos, comma_sep(score["score"])) #score
+        draw_std(1035, y_pos, percentage(score["accuracy"])) #acc
+        draw_std(1172, y_pos, comma_sep(score["combo"])+"x") #combo
 
     img_binary = io.BytesIO()
     img.save(img_binary, 'PNG')

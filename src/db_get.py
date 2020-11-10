@@ -153,13 +153,13 @@ async def get_top_player_scores(player_id, page=1, mod=None):
     prefixes are used, with valid mods in the array `["NM", "HR", "HD", "DT", "FM"]`.
     
     Note this function does no additional work towards generating a Discord embed. If the player
-    is not found, this function returns `(None, None)`. If no scores are found but the player exists, 
-    `([], 0)` is returned."""
+    is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
+    `([], 0, <page>)` is returned."""
     db = client['players_and_teams']
     player_collection = db['players']
     player_document = await get_player_document(player_id)
     if player_document is None:
-        return (None, None)
+        return (None, None, None)
     scores = player_document["scores"]
     
     #the number of scores depends on what scores were requested
@@ -185,7 +185,7 @@ async def get_top_player_scores(player_id, page=1, mod=None):
         cursor = score_collection.find({'_id': {'$in': scores}}).sort("score", -1).skip((page-1)*10).limit(10)
     else:
         cursor = score_collection.find({'_id': {'$in': scores}, 'map_type': mod}).sort("score", -1).skip((page-1)*10).limit(10)
-    return (await cursor.to_list(length=10), max_page)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_top_team_scores(team_name, page=1, mod=None):
     """Get the top n scores (as documents) of a team, filtered by mod if defined, and the max page.
@@ -202,13 +202,13 @@ async def get_top_team_scores(team_name, page=1, mod=None):
     prefixes are used, with valid mods in the array `["NM", "HR", "HD", "DT", "FM"]`.
     
     Note this function does no additional work towards generating a Discord embed. If the player
-    is not found, this function returns `(None, None)`. If no scores are found but the player exists, 
-    `([], 0)` is returned."""
+    is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
+    `([], 0, <page>)` is returned."""
     db = client['players_and_teams']
     team_collection = db['teams']
     team_document = await get_team_document(team_name)
     if team_document is None:
-        return (None, None)
+        return (None, None, None)
     scores = team_document["scores"]
 
     #the number of scores depends on what scores were requested
@@ -234,7 +234,7 @@ async def get_top_team_scores(team_name, page=1, mod=None):
         cursor = score_collection.find({'_id': {'$in': scores}}).sort("score", -1).skip((page-1)*10).limit(10)
     else:
         cursor = score_collection.find({'_id': {'$in': scores}, 'map_type': mod}).sort("score", -1).skip((page-1)*10).limit(10)
-    return (await cursor.to_list(length=10), max_page)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_top_map_scores(map_id, page=1, pool=None):
     """Get the top n scores (as documents) of a map.
@@ -248,11 +248,11 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     `determine_pool()`.
     
     Note this function does no additional work towards generating a Discord embed. If the player
-    is not found, this function returns `(None, None)`. If no scores are found but the player exists, 
-    `([], 0)` is returned."""
+    is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
+    `([], 0, <page>)` is returned."""
     map_document = await get_map_document(map_id)
     if not map_document:
-        return (None, None)
+        return (None, None, None)
     scores = map_document["scores"]
 
     max_page = math.ceil(len(scores)/10)
@@ -263,12 +263,12 @@ async def get_top_map_scores(map_id, page=1, pool=None):
 
     score_collection = client['matches_and_scores']['scores']
     cursor = score_collection.find({'_id': {'$in': scores}}).sort("score", -1).skip((page-1)*10).limit(10)
-    return (await cursor.to_list(length=10), max_page)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_top_tournament_players(leaderboard_field="score", page=1):
     """Get the best players (as documents) in a certain average category.
     
-    Returns the tuple (<players>, max_pages).
+    Returns the tuple (<players>, page, max_pages).
     - `leaderboard` is any of `"acc"`, `"score"`, or `"contrib"`. `"score"` by default.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
@@ -295,12 +295,12 @@ async def get_top_tournament_players(leaderboard_field="score", page=1):
     }
 
     cursor = player_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
-    return (await cursor.to_list(length=10), max_page)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_top_tournament_teams(leaderboard_field="score", page=1):
     """Get the best teams (as documents) in a certain average category.
     
-    Returns the tuple (<teams>, max_pages).
+    Returns the tuple (<teams>, page, max_pages).
     - `leaderboard` is either `"acc"` or `"score"`. `"score"` by default.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
@@ -328,7 +328,7 @@ async def get_top_tournament_teams(leaderboard_field="score", page=1):
     #we can just do command-level validation
 
     cursor = team_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
-    return (await cursor.to_list(length=10), max_page)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None):
     """Get the best scores (as documents) in a certain category.
