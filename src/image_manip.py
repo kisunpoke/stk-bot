@@ -121,16 +121,16 @@ async def make_team_card(team_doc):
     #table
     #x-dists: 180,345,548,702,840
     #y-dist: 39 each row starting from 565
-    row_pos = [526, 565, 604, 643, 682]
     mods = ["NM", "HD", "HR", "DT", "FM"]
     for i in range(0,5):
+        row_pos = 526 + 39*i
         mod_stat = stat["by_mod"][mods[i]]
-        draw_std(180, row_pos[i], mod_stat["maps_played"]) #played
+        draw_std(180, row_pos, mod_stat["maps_played"]) #played
         mod_wr_str = wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
-        draw_std(345, row_pos[i], mod_wr_str) #w/l (wr%)
-        draw_std(548, row_pos[i], comma_sep(mod_stat["average_score"])) #average score
-        draw_std(702, row_pos[i], percentage(mod_stat["average_acc"])) #average acc
-        draw_std(840, row_pos[i], "-")#average contrib - unused for teams
+        draw_std(345, row_pos, mod_wr_str) #w/l (wr%)
+        draw_std(548, row_pos, comma_sep(mod_stat["average_score"])) #average score
+        draw_std(702, row_pos, percentage(mod_stat["average_acc"])) #average acc
+        draw_std(840, row_pos, "-")#average contrib - unused for teams
 
     #pie chart
     #note: iterating over stat["by_mod"] works because dicts are insertion-ordered in python
@@ -139,7 +139,6 @@ async def make_team_card(team_doc):
     #alphabetically ordered
     #you may want to hardcode the mod list instead of using stat["by_mod"] if the colors are jank
     data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
-    print(data)
     colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
 
     fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
@@ -235,52 +234,63 @@ async def make_player_card(player_doc):
     """Generate and return a team card (as a discord.py-compatible image)."""
     def draw_std(x, y, text, font="m"):
         #looool
-        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
-
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+    stat = player_doc['cached']
+    
     player_card_base_img_fp = "src/static/playercard.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
 
     #header
-    draw_std(640, 65, "player name", "l") #player
-    draw_std(640, 105, "team name") #team name
+    draw_std(640, 65, player_doc["user_name"], "l") #player
+    draw_std(640, 105, player_doc["team_name"]) #team name
 
     #average accuracy
-    draw_std(185, 218, "Player 1, player 23  oife")
-    draw_std(185, 245, "Player 1, player 23  oife", "s")
-
-    #average accuracy
-    draw_std(640, 218, "Player 1, player 23  oife")
-    draw_std(640, 245, "Player 1, player 23  oife", "s")
+    draw_std(185, 218, percentage(stat["average_acc"]))
+    draw_std(185, 245, "#"+str(stat["acc_rank"]), "s")
 
     #average score
-    draw_std(1106, 218, "Player 1, player 23  oife")
-    draw_std(1106, 245, "Player 1, player 23  oife", "s")
+    draw_std(640, 218, comma_sep(stat["average_score"]))
+    draw_std(640, 245, "#"+str(stat["score_rank"]), "s")
+
+    #average contrib
+    draw_std(1106, 218, percentage(stat["average_contrib"]))
+    draw_std(1106, 245, "#"+str(stat["contrib_rank"]), "s")
 
     #stat row
-    draw_std(104, 335, "9,999")
-    draw_std(311, 335, "9,999")
-    draw_std(742, 335, "9,999")
-    draw_std(886, 335, "9,999")
-    draw_std(1028, 335, "9,999")
-    draw_std(1173, 335, "9,999")
+    draw_std(104, 335, stat['maps_played']) #playcount
+    wr_str = str(stat["maps_won"])+"/"+str(stat['maps_lost'])+" ("+percentage(stat["maps_won"]/stat["maps_played"])+")"
+    draw_std(311, 335, wr_str) #w/r(wr%)
+    draw_std(742, 335, comma_sep(stat["hits"]["300_count"])) #300s
+    draw_std(886, 335, comma_sep(stat["hits"]["100_count"])) #100s
+    draw_std(1028, 335, comma_sep(stat["hits"]["50_count"])) #50s
+    draw_std(1173, 335, comma_sep(stat["hits"]["miss_count"])) #misss
 
     #table
     #x-dists: 180,345,548,702,840
-    #y-dist: 39 each row
-    for row_pos in range(526, 721, 39):
-        draw_std(180, row_pos, "9,999")
-        draw_std(345, row_pos, "9,999")
-        draw_std(548, row_pos, "9,999")
-        draw_std(702, row_pos, "9,999")
-        draw_std(840, row_pos, "9,999")
+    #y-dist: 39 each row starting from 526
+    mods = ["NM", "HD", "HR", "DT", "FM"]
+    for i in range(0,5):
+        row_pos = 526 + 39*i
+        mod_stat = stat["by_mod"][mods[i]]
+        draw_std(180, row_pos, mod_stat["maps_played"]) #played
+        mod_wr_str = wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
+        draw_std(345, row_pos, mod_wr_str) #w/l (wr%)
+        draw_std(548, row_pos, comma_sep(mod_stat["average_score"])) #average score
+        draw_std(702, row_pos, percentage(mod_stat["average_acc"])) #average acc
+        draw_std(840, row_pos, percentage(mod_stat["average_contrib"]))#average contrib - unused for teams
 
     #pie chart
-    data = [1,2,3,4,5]
+    #note: iterating over stat["by_mod"] works because dicts are insertion-ordered in python
+    #since in db_manip we insert them in a certain order
+    #otherwise the colors would be wrong if, for example, stat["by_mod"] returned the mod names
+    #alphabetically ordered
+    #you may want to hardcode the mod list instead of using stat["by_mod"] if the colors are jank
+    data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
     colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
 
-    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 400px
+    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
     ax1.pie(data, colors=colors)
     ax1.axis('equal')
 
@@ -292,10 +302,12 @@ async def make_player_card(player_doc):
     plt_img = Image.open(plt_binary)
 
     #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
-    #the alpha channel is used as the mask; transparent=True parameter fixes any weirdness (must also be RGBA)
+    #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
     img.paste(plt_img, (918, 382), plt_img)
 
-
+    #you need to seek to 0 for it to work:
+    #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
+    #file-like object
     img_binary = io.BytesIO()
     img.save(img_binary, 'PNG')
     img_binary.seek(0)
