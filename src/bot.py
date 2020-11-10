@@ -40,7 +40,7 @@ teamcard
 playercard
 teamstats
 playerstats
-mapstats
+mapbest
 maplb
 
 '''

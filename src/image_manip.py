@@ -1,6 +1,7 @@
 """Async functions for generating and returning images.
 
 Includes team/player card generation and image-based statistics as needed.
+These functions only take documents to allow for validation at the command level.
 """
 #https://stackoverflow.com/questions/33101935/convert-pil-image-to-byte-array
 from PIL import Image, ImageFont, ImageDraw
@@ -16,24 +17,70 @@ fonts = {
     "l": ImageFont.truetype("src/static/Renogare-Regular.otf", 40)
 }
 
-'''
-async def make_player_card(player):
-    """Generate and return a player card (as a direct image)."""
+async def make_team_best(score_docs):
+    """Generate and return a team score leaderboard(as a discord.py-compatible image)."""
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+
+    def truncate(text, font="m"):
+        """Truncates long strings to the desired max width and adds an ellipsis if needed."""
+        max_width = 510
+
+        font = fonts["m"]
+        ellipsis_width, _ = font.getsize("...")
+
+        width, _ = font.getsize(text)
+        if width>max_width:
+            while width>(max_width-ellipsis_width):
+                text = text[:-1]
+                width, _ = font.getsize(text)
+            text += "..."
+        return text
+
+    player_card_base_img_fp = "src/static/teambest.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype("src/static/Nunito-Regular.ttf", 100)
-    draw.text((200, 0), "Information:", (255, 255, 255), font=font)
-    #i guess you have to seek before you actually do the thing
-    #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
-    with io.BytesIO() as img_binary:
-        img.save(img_binary, 'PNG')
-        img_binary.seek(0)
-        return img_binary
-'''
-#as with the other functions, this takes team_doc rather than team_name to
-#allow for validation at the command level (rather than returning None from this function)
-#this function should always be expected to return the filelike
+
+    #header
+    draw_std(640, 65, "team name", "l") #team name
+    draw_std(640, 105, "player list") #player list
+
+    #page number
+    draw.text((36, 137), "(page 1 of 1)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    data = [1,2,3,4,5,6,7,8,9,10]
+    colors = {
+        "NM":(165,165,165),
+        "HD":(255,192,0),
+        "HR":(255,0,0),
+        "DT":(0,176,240),
+        "FM":(146,208,80)
+    }
+    #table
+    #x-dists: 70,116(left),266,876,1035,1172
+    #y-dist: 39 each row
+    for row in range(0,len(data)):
+        banner_fp = "src/static/map-banners/cover.jpg"
+        banner = Image.open(banner_fp, mode='r')
+        banner = banner.resize((139,37))
+
+        y_pos = (row*39)+216
+        draw_std(76, y_pos, "1") #numerical ranking
+        draw_std(267, y_pos, "9,999") #player name
+        #tuple refers to top-left corner, so half the banner's height is subtracted
+        img.paste(banner, (406,y_pos-19)) #map banner
+        draw.line([546,y_pos-19,546,y_pos+19], colors["HR"], 5) #modline
+        draw.text((556, y_pos), truncate("text"), (255, 255, 255), font=fonts["m"],
+                   align='left', anchor="lm") #map name
+        draw_std(1160, y_pos, "9,999") #score
+
+    img_binary = io.BytesIO()
+    img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
+
 async def make_team_card(team_doc):
     """Generate and return a team card (as a discord.py-compatible image) based on a team document."""
     def draw_std(x, y, text, font="m"):
@@ -118,24 +165,143 @@ async def make_team_card(team_doc):
     img_binary.seek(0)
     return img_binary
 
-'''
-async def make_player_best(player, data):
+async def make_player_best(score_docs):
     """Generate and return a player score leaderboard (as a discord.py-compatible image)."""
-    pass
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
 
-async def make_team_card(player, data):
+    def truncate(text, font="m"):
+        """Truncates long strings to the desired max width and adds an ellipsis if needed."""
+        max_width = 510
+
+        font = fonts["m"]
+        ellipsis_width, _ = font.getsize("...")
+
+        width, _ = font.getsize(text)
+        if width>max_width:
+            while width>(max_width-ellipsis_width):
+                #repeatedly cut off characters until we can shove the ellipsis in 
+                text = text[:-1]
+                width, _ = font.getsize(text)
+            text += "..."
+        return text
+
+    player_card_base_img_fp = "src/static/playerbest.png"
+    img = Image.open(player_card_base_img_fp, mode='r')
+
+    draw = ImageDraw.Draw(img)
+
+    #header
+    draw_std(640, 65, "player name", "l") #player
+    draw_std(640, 105, "team name") #team name
+
+    #page number
+    draw.text((36, 137), "(page 1 of 1)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    data = [1,2,3,4,5,6,7,8,9,10]
+    colors = {
+        "NM":(165,165,165),
+        "HD":(255,192,0),
+        "HR":(255,0,0),
+        "DT":(0,176,240),
+        "FM":(146,208,80)
+    }
+    #table
+    #x-dists: 70,116(left),266,876,1035,1172
+    #y-dist: 39 each row
+    for row in range(0,len(data)):
+        banner_fp = "src/static/map-banners/cover.jpg"
+        banner = Image.open(banner_fp, mode='r')
+        banner = banner.resize((139,37))
+
+        y_pos = (row*39)+216
+        draw_std(70, y_pos, "1") #numerical ranking
+        #tuple refers to top-left corner, so half the banner's height is subtracted
+        img.paste(banner, (117,y_pos-19)) #map banner
+        draw.line([257,y_pos-19,257,y_pos+19], colors["HR"], 5) #modline
+        draw.text((267, y_pos), truncate("text"), (255, 255, 255), font=fonts["m"],
+                   align='left', anchor="lm") #map name
+        draw_std(876, y_pos, "9,999") #score
+        draw_std(1035, y_pos, "9,999") #acc
+        draw_std(1172, y_pos, "9,999") #combo
+
+    img_binary = io.BytesIO()
+    img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
+
+async def make_player_card(player_doc):
     """Generate and return a team card (as a discord.py-compatible image)."""
-    pass
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), text, (255, 255, 255), font=fonts[font], align='center', anchor="mm")
 
-async def make_team_best(player, data):
-    """Generate and return a team score leaderboard(as a discord.py-compatible image)."""
-    pass
+    player_card_base_img_fp = "src/static/playercard.png"
+    img = Image.open(player_card_base_img_fp, mode='r')
+
+    draw = ImageDraw.Draw(img)
+
+    #header
+    draw_std(640, 65, "player name", "l") #player
+    draw_std(640, 105, "team name") #team name
+
+    #average accuracy
+    draw_std(185, 218, "Player 1, player 23  oife")
+    draw_std(185, 245, "Player 1, player 23  oife", "s")
+
+    #average accuracy
+    draw_std(640, 218, "Player 1, player 23  oife")
+    draw_std(640, 245, "Player 1, player 23  oife", "s")
+
+    #average score
+    draw_std(1106, 218, "Player 1, player 23  oife")
+    draw_std(1106, 245, "Player 1, player 23  oife", "s")
+
+    #stat row
+    draw_std(104, 335, "9,999")
+    draw_std(311, 335, "9,999")
+    draw_std(742, 335, "9,999")
+    draw_std(886, 335, "9,999")
+    draw_std(1028, 335, "9,999")
+    draw_std(1173, 335, "9,999")
+
+    #table
+    #x-dists: 180,345,548,702,840
+    #y-dist: 39 each row
+    for row_pos in range(526, 721, 39):
+        draw_std(180, row_pos, "9,999")
+        draw_std(345, row_pos, "9,999")
+        draw_std(548, row_pos, "9,999")
+        draw_std(702, row_pos, "9,999")
+        draw_std(840, row_pos, "9,999")
+
+    #pie chart
+    data = [1,2,3,4,5]
+    colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
+
+    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 400px
+    ax1.pie(data, colors=colors)
+    ax1.axis('equal')
+
+    #to binary and into pillow
+    #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+    plt_binary = io.BytesIO()
+    plt.savefig(plt_binary, format='png', transparent=True)
+    plt_binary.seek(0)
+    plt_img = Image.open(plt_binary)
+
+    #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
+    #the alpha channel is used as the mask; transparent=True parameter fixes any weirdness (must also be RGBA)
+    img.paste(plt_img, (918, 382), plt_img)
+
+
+    img_binary = io.BytesIO()
+    img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
 
 async def make_map_best(player, data):
     """Generate and return a map leaderboard (as a discord.py-compatible image_."""
     pass
 
-async def make_map_card(player, data):
-    """Generate and return a map stats card (as a discord.py-compatible image)."""
-    pass
-'''

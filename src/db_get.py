@@ -75,7 +75,11 @@ async def get_name_from_user(discord_id, *, return_player):
     
     If `return_player` is True, returns the osu! ID. Otherwise, returns
     the team name (same as _id of associated Team document).
-    If no osu! ID is associated, returns `None`."""
+    If no osu! ID is associated, returns `None`.
+    
+    (Because we generate the team name and osu! ID, there is no need
+    to have additional validation for the returned values of this function if
+    present. Either it will be right, or it will return `None`.)"""
     user_doc = await get_user_document(discord_id)
     if not user_doc["osu_id"]:
         return None
