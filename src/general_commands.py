@@ -16,7 +16,7 @@ class GeneralCommands(commands.Cog):
         if command is not None:
             help_embed = await help_generator(command)
             if help_embed is None:
-                pass
+                await prompts.error_embed(f"Command {command} doesn't exist!")
             else:
                 await ctx.send(embed=help_embed)
         else:
@@ -24,7 +24,12 @@ class GeneralCommands(commands.Cog):
     
     @commands.command()
     async def about(self, ctx):
-        pass
+        desc = (f"A dumpster fire of a bot written with discord.py. Source at "
+                f"[https://github.com/kisunpoke/stk-bot](https://github.com/kisunpoke/stk-bot).")
+        embed = discord.Embed(description=desc)
+        embed.set_author(name=utils.bot_name+" "+utils.bot_ver)
+        await ctx.send(embed=embed)
+
 
 #i am not sure where else i should be putting this
 
@@ -64,7 +69,6 @@ async def default_help():
             category_details += " • "+command+" - "+help[command]["summary"]+"\n"
         embed.add_field(name=category, value=category_details, inline=False)
     return embed
-
 
 #unfortunate
 #markup is ok below
