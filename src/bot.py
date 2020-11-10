@@ -8,12 +8,14 @@ import os
 #os.getenv() instead of os.environ[] because using os.environ will return KeyError, getenv() returns None
 if os.getenv("on_heroku") != "TRUE":
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(dotenv_path="main.env")
 
 import general_commands
 import staff_commands
 import match_commands
 import user_commands
+
+import prompts
 
 '''to do:
 
@@ -23,15 +25,23 @@ update only players/mappool/meta etc
 match adding
 full match stats under match_commands.py
 implement cards (render leaderboards, player stats, team stats, etc)
-implement text stats (same as above but text-only)
+implement text stats (same as above but text-only) #https://discordpy.readthedocs.io/en/latest/faq.html#how-do-i-use-a-local-image-file-for-an-embed-image for histograms and others
 for leaderboards, show where the user stands on any given page
 /tmp for downloaded assets
-deployment + integration with env vars
 argparser for UserStatsCommands
 about command for bot
 list of pools?
 proper error handling
-make the secure channel in db_manip not hardcoded
+make roles and other things not hardcoded
+proper admin help
+admin commands
+
+teamcard
+playercard
+teamstats
+playerstats
+mapstats
+maplb
 
 '''
 
@@ -57,7 +67,7 @@ async def on_ready():
 async def on_command_error(ctx, exception):
     #check the exception type - command not found, params incorrect, runtime error, etc.
     print(exception)
-    await ctx.send(f"The following error occurred: {exception}")
+    await prompts.error_embed(bot, ctx, f"The following error occurred: {exception}")
 '''
 
 bot.run(token)

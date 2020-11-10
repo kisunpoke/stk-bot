@@ -540,8 +540,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     the command was called.
 
     As of now, this function is designed exclusively for tournament matches. Attempting
-    to use this function for non-tournament matches will fail at best, blow something up
-    at worst.
+    to use this function for non-tournament matches will fail.
     """
     #so that feels like a lot, will split later as necessary
 
@@ -706,6 +705,8 @@ async def update_player_stats(player_dict):
     This function pulls existing player stats and updates them
     accordingly. Note that statistics are not cached for individual
     mods.
+
+    Players that can't be found based on ID are ignored.
     
     Cached ranks should be recalculated following individual score addition."""
     db = client['players_and_teams']
