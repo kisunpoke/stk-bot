@@ -41,7 +41,7 @@ async def make_team_card(team_doc):
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
     stat = team_doc['cached']
 
-    player_card_base_img_fp = "src/static/team-bg.png"
+    player_card_base_img_fp = "src/static/teamcard.png"
     img = Image.open(player_card_base_img_fp, mode='r')
     draw = ImageDraw.Draw(img)
 
