@@ -241,12 +241,15 @@ class UserStatsCommands(commands.Cog):
                 break
         if player_name:
             score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
-            if not score_docs:
+            if score_docs is None and max_page is None:
                 error = ("Couldn't find that tournament player. Try enclosing your name in quotes "
                          "`(\"\")` or using your actual osu! user ID. Note that non-tournament players "
                          "don't have stats! (Also, I don't know if you've had a username change until "
                          "I'm updated - but you can still use your osu! ID.)")
                 await prompts.error_embed(self, ctx, error)
+                return None
+            elif max_page == 0:
+                await prompts.error_embed(self, ctx, "This player doesn't seem to have scores yet.")
                 return None
         else:
             player_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=True)
@@ -270,7 +273,7 @@ class UserStatsCommands(commands.Cog):
         if team_name:
             team_doc = await db_get.get_team_document(team_name)
             if not team_doc:
-                await prompts.error_embed(self, ctx, "Couldn't find that team...")
+                await prompts.error_embed(self, ctx, "Couldn't find that team... (Try using quotes?)")
                 return None
         else:
             team_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=False)
@@ -294,7 +297,7 @@ class UserStatsCommands(commands.Cog):
         if team_name:
             team_doc = await db_get.get_team_document(team_name)
             if not team_doc:
-                await prompts.error_embed(self, ctx, "Couldn't find that team...")
+                await prompts.error_embed(self, ctx, "Couldn't find that team... (Try using quotes?)")
                 return None
         else:
             team_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=False)
@@ -345,8 +348,11 @@ class UserStatsCommands(commands.Cog):
                 break
         if team_name:
             score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
-            if not score_docs:
-                await prompts.error_embed(self, ctx, "Couldn't find that team...")
+            if score_docs is None and max_page is None:
+                await prompts.error_embed(self, ctx, "Couldn't find that team... (Try using quotes?)")
+                return None
+            elif max_page == 0:
+                await prompts.error_embed(self, ctx, "This team doesn't seem to have scores yet.")
                 return None
         else:
             team_name = await db_get.get_name_from_user(ctx.message.author.id, return_player=False)

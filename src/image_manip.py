@@ -124,7 +124,10 @@ async def make_team_card(team_doc):
 
     #stat row
     draw_std(104, 335, stat['maps_played']) #playcount
-    wr_str = str(stat["maps_won"])+"/"+str(stat['maps_lost'])+" ("+percentage(stat["maps_won"]/stat["maps_played"])+")"
+    if stat['maps_played'] != 0:
+        wr_str = str(stat["maps_won"])+"/"+str(stat['maps_lost'])+" ("+percentage(stat["maps_won"]/stat["maps_played"])+")"
+    else:
+        wr_str = "-"
     draw_std(311, 335, wr_str) #w/r(wr%)
     draw_std(742, 335, comma_sep(stat["hits"]["300_count"])) #300s
     draw_std(886, 335, comma_sep(stat["hits"]["100_count"])) #100s
@@ -139,7 +142,10 @@ async def make_team_card(team_doc):
         row_pos = 526 + 39*i
         mod_stat = stat["by_mod"][mods[i]]
         draw_std(180, row_pos, mod_stat["maps_played"]) #played
-        mod_wr_str = wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
+        if mod_stat["maps_played"] != 0:
+            mod_wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
+        else:
+            mod_wr_str = "-"
         draw_std(345, row_pos, mod_wr_str) #w/l (wr%)
         draw_std(548, row_pos, comma_sep(mod_stat["average_score"])) #average score
         draw_std(702, row_pos, percentage(mod_stat["average_acc"])) #average acc
@@ -151,23 +157,24 @@ async def make_team_card(team_doc):
     #otherwise the colors would be wrong if, for example, stat["by_mod"] returned the mod names
     #alphabetically ordered
     #you may want to hardcode the mod list instead of using stat["by_mod"] if the colors are jank
-    data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
-    colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
+    if stat["maps_played"] != 0:
+        data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
+        colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
 
-    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
-    ax1.pie(data, colors=colors)
-    ax1.axis('equal')
+        fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
+        ax1.pie(data, colors=colors)
+        ax1.axis('equal')
 
-    #to binary and into pillow
-    #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
-    plt_binary = io.BytesIO()
-    plt.savefig(plt_binary, format='png', transparent=True)
-    plt_binary.seek(0)
-    plt_img = Image.open(plt_binary)
+        #to binary and into pillow
+        #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+        plt_binary = io.BytesIO()
+        plt.savefig(plt_binary, format='png', transparent=True)
+        plt_binary.seek(0)
+        plt_img = Image.open(plt_binary)
 
-    #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
-    #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
-    img.paste(plt_img, (918, 382), plt_img)
+        #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
+        #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
+        img.paste(plt_img, (918, 382), plt_img)
 
     #you need to seek to 0 for it to work:
     #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
@@ -279,7 +286,10 @@ async def make_player_card(player_doc):
 
     #stat row
     draw_std(104, 335, stat['maps_played']) #playcount
-    wr_str = str(stat["maps_won"])+"/"+str(stat['maps_lost'])+" ("+percentage(stat["maps_won"]/stat["maps_played"])+")"
+    if stat['maps_played'] != 0:
+        wr_str = str(stat["maps_won"])+"/"+str(stat['maps_lost'])+" ("+percentage(stat["maps_won"]/stat["maps_played"])+")"
+    else:
+        wr_str = "-"
     draw_std(311, 335, wr_str) #w/r(wr%)
     draw_std(742, 335, comma_sep(stat["hits"]["300_count"])) #300s
     draw_std(886, 335, comma_sep(stat["hits"]["100_count"])) #100s
@@ -294,7 +304,10 @@ async def make_player_card(player_doc):
         row_pos = 526 + 39*i
         mod_stat = stat["by_mod"][mods[i]]
         draw_std(180, row_pos, mod_stat["maps_played"]) #played
-        mod_wr_str = wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
+        if mod_stat["maps_played"] != 0:
+            mod_wr_str = str(mod_stat["maps_won"])+"/"+str(mod_stat['maps_lost'])+" ("+percentage(mod_stat["maps_won"]/mod_stat["maps_played"])+")"
+        else:
+            mod_wr_str = "-"
         draw_std(345, row_pos, mod_wr_str) #w/l (wr%)
         draw_std(548, row_pos, comma_sep(mod_stat["average_score"])) #average score
         draw_std(702, row_pos, percentage(mod_stat["average_acc"])) #average acc
@@ -306,23 +319,24 @@ async def make_player_card(player_doc):
     #otherwise the colors would be wrong if, for example, stat["by_mod"] returned the mod names
     #alphabetically ordered
     #you may want to hardcode the mod list instead of using stat["by_mod"] if the colors are jank
-    data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
-    colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
+    if stat['maps_played'] != 0:
+        data = [stat["by_mod"][mod_name]["maps_played"] for mod_name in stat["by_mod"]]
+        colors = ["#A5A5A5", "#FFC000", "#FF0000", "#00B0F0", "#92D050"]
 
-    fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
-    ax1.pie(data, colors=colors)
-    ax1.axis('equal')
+        fig1, ax1 = plt.subplots(figsize=(3.5, 3.5)) #default is 100dpi, so 350px by 350px
+        ax1.pie(data, colors=colors)
+        ax1.axis('equal')
 
-    #to binary and into pillow
-    #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
-    plt_binary = io.BytesIO()
-    plt.savefig(plt_binary, format='png', transparent=True)
-    plt_binary.seek(0)
-    plt_img = Image.open(plt_binary)
+        #to binary and into pillow
+        #https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+        plt_binary = io.BytesIO()
+        plt.savefig(plt_binary, format='png', transparent=True)
+        plt_binary.seek(0)
+        plt_img = Image.open(plt_binary)
 
-    #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
-    #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
-    img.paste(plt_img, (918, 382), plt_img)
+        #https://stackoverflow.com/questions/5324647/how-to-merge-a-transparent-png-image-with-another-image-using-pil
+        #the alpha channel is used as the mask; transparent=True parameter actually saves as transparent
+        img.paste(plt_img, (918, 382), plt_img)
 
     #you need to seek to 0 for it to work:
     #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image

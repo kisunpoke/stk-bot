@@ -27,7 +27,6 @@ full match stats under match_commands.py
 implement cards (render leaderboards, player stats, team stats, etc)
 implement text stats (same as above but text-only) #https://discordpy.readthedocs.io/en/latest/faq.html#how-do-i-use-a-local-image-file-for-an-embed-image for histograms and others
 for leaderboards, show where the user stands on any given page
-/tmp for downloaded assets
 argparser for UserStatsCommands
 list of pools?
 proper error handling

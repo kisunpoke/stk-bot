@@ -154,7 +154,7 @@ async def get_top_player_scores(player_id, page=1, mod=None):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
-    `([], 0, <page>)` is returned."""
+    `([], <page>, 0)` is returned."""
     db = client['players_and_teams']
     player_collection = db['players']
     player_document = await get_player_document(player_id)
@@ -173,6 +173,9 @@ async def get_top_player_scores(player_id, page=1, mod=None):
     }
 
     max_page = math.ceil(mod_mapping[mod]/10)
+    if max_page == 0:
+        return ([], page, 0)
+
     if page < 0:
         page = 1
     if page > max_page:
@@ -190,7 +193,7 @@ async def get_top_player_scores(player_id, page=1, mod=None):
 async def get_top_team_scores(team_name, page=1, mod=None):
     """Get the top n scores (as documents) of a team, filtered by mod if defined, and the max page.
     
-    Returns the tuple `([<documents>], max_page)`.
+    Returns the tuple `([<documents>], page, max_page)`.
     
     Parameters:
     - `team_name` must be an exact match of the team name.
@@ -203,7 +206,7 @@ async def get_top_team_scores(team_name, page=1, mod=None):
     
     Note this function does no additional work towards generating a Discord embed. If the player
     is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
-    `([], 0, <page>)` is returned."""
+    `([], <page>, 0)` is returned."""
     db = client['players_and_teams']
     team_collection = db['teams']
     team_document = await get_team_document(team_name)
@@ -222,6 +225,9 @@ async def get_top_team_scores(team_name, page=1, mod=None):
     }
 
     max_page = math.ceil(mod_mapping[mod]/10)
+    if max_page == 0:
+        return ([], page, 0)
+
     if page < 0:
         page = 1
     if page > max_page:
