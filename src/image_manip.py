@@ -59,7 +59,8 @@ async def make_team_best(score_docs, current_page, max_page):
         "HD":(255,192,0),
         "HR":(255,0,0),
         "DT":(0,176,240),
-        "FM":(146,208,80)
+        "FM":(146,208,80),
+        "TB":(146,208,80)
     }
     #table
     #x-dists: 70,116(left),266,876,1035,1172
@@ -223,7 +224,8 @@ async def make_player_best(score_docs, current_page, max_page):
         "HD":(255,192,0),
         "HR":(255,0,0),
         "DT":(0,176,240),
-        "FM":(146,208,80)
+        "FM":(146,208,80),
+        "TB":(146,208,80)
     }
     #table
     #x-dists: 70,116(left),266,876,1035,1172
