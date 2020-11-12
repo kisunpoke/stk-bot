@@ -18,8 +18,18 @@ fonts = {
     "l": ImageFont.truetype("src/static/Renogare-Regular.otf", 40)
 }
 
-async def make_team_best(score_docs, current_page, max_page):
-    """Generate and return a team score leaderboard(as a discord.py-compatible image)."""
+async def make_team_best(score_docs, current_page, max_page, mod_filter = None):
+    """Generate and return a team score leaderboard(as a discord.py-compatible image).
+    
+    - `score_docs` is an array of score documents, 10 or fewer, of the team's scores.
+    This should be found through `db_get.get_top_team_scores()` prior to calling this function.
+    (This allows for mod filtering at the command level.)
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the max page from `db_get`.
+    - `mod_filter` is the mod these documents are filtered by, if applicable.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
     def draw_std(x, y, text, font="m"):
         #looool
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
@@ -52,7 +62,10 @@ async def make_team_best(score_docs, current_page, max_page):
     draw_std(640, 105, " • ".join(player_names)) #player list
 
     #page number
-    draw.text((36, 137), f"(page {current_page} of {max_page})", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+    page_text = f"(page {current_page} of {max_page})" 
+    if mod_filter:
+        page_text += f" ({mod_filter})"
+    draw.text((36, 137), page_text, (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
 
     colors = {
         "NM":(165,165,165),
@@ -92,7 +105,9 @@ async def make_team_best(score_docs, current_page, max_page):
     return img_binary
 
 async def make_team_card(team_doc):
-    """Generate and return a team card (as a discord.py-compatible image) based on a team document."""
+    """Generate and return a team card (as a discord.py-compatible image) based on a team document.
+    
+    - `team_doc` is a team document."""
     def draw_std(x, y, text, font="m"):
         #looool
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
@@ -185,8 +200,18 @@ async def make_team_card(team_doc):
     img_binary.seek(0)
     return img_binary
 
-async def make_player_best(score_docs, current_page, max_page):
-    """Generate and return a player score leaderboard (as a discord.py-compatible image)."""
+async def make_player_best(score_docs, current_page, max_page, mod_filter = None):
+    """Generate and return a player score leaderboard (as a discord.py-compatible image).
+    
+    - `score_docs` is an array of score documents, 10 or fewer, of the player's scores.
+    This should be found through `db_get.get_top_player_scores()` prior to calling this function.
+    (This allows for mod filtering at the command level.)
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the page from `db_get`.
+    - `mod_filter` is the mod these documents are filtered by, if applicable.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
     def draw_std(x, y, text, font="m"):
         #looool
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
@@ -217,7 +242,10 @@ async def make_player_best(score_docs, current_page, max_page):
     draw_std(640, 105, player_doc["team_name"]) #team name
 
     #page number
-    draw.text((36, 137), f"(page {current_page} of {max_page})", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+    page_text = f"(page {current_page} of {max_page})" 
+    if mod_filter:
+        page_text += f" ({mod_filter})"
+    draw.text((36, 137), page_text, (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
 
     colors = {
         "NM":(165,165,165),
@@ -259,7 +287,9 @@ async def make_player_best(score_docs, current_page, max_page):
     return img_binary
 
 async def make_player_card(player_doc):
-    """Generate and return a team card (as a discord.py-compatible image)."""
+    """Generate and return a team card (as a discord.py-compatible image).
+    
+    - `player_doc` is a player document."""
     def draw_std(x, y, text, font="m"):
         #looool
         draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
@@ -348,7 +378,56 @@ async def make_player_card(player_doc):
     img_binary.seek(0)
     return img_binary
 
-async def make_map_best(player, data):
-    """Generate and return a map leaderboard (as a discord.py-compatible image_."""
+async def make_map_best(score_docs, current_page, max_page, player_score = None):
+    """Generate and return a map leaderboard (as a discord.py-compatible image).
+    
+    - `score_docs` is an array of score documents, 10 or fewer, of the map's scores.
+    This should be found through `db_get.get_top_map_scores()` prior to calling this function.
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the page from `db_get`.
+    - `player_score` should be the best score document of the command invoker on this map,
+    if applicable.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
     pass
 
+async def make_score_best(score_docs, current_page, max_page, mod_filter = None):
+    """Generate and return the best scores of the tournament as an image.
+    
+    - `score_docs` is an array of score documents, 10 or fewer, of the best scores.
+    This should be found through `db_get.get_top_team_scores()` prior to calling this function.
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the page from `db_get`.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
+    pass
+
+async def make_averagep_best(player_docs, current_page, max_page, category, invoker_doc=None):
+    """Generate and return the best players of the tournament in a certain category as an image.
+    
+    - `player_docs` is an array of player documents, 10 or fewer, of the map's scores.
+    This should be found through `db_get.get_top_team_scores()` prior to calling this function.
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the page from `db_get`.
+    - `category` should be the leaderboard category.
+    - `invoker_doc` should be the player document of the command invoker, if applicable.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
+    pass
+
+async def make_averaget_best(team_docs, current_page, max_page, category, invoker_doc=None):
+    """Generate and return the best teams of the tournament in a certain category as an image.
+    
+    - `team_docs` is an array of player documents, 10 or fewer, of the map's scores.
+    This should be found through `db_get.get_top_team_scores()` prior to calling this function.
+    - `current_page` is the page from `db_get`.
+    - `max_page` is also the page from `db_get`.
+    - `category` should be the leaderboard category.
+    - `invoker_doc` should be the team document of the command invoker, if applicable.
+    
+    `current_page` and `max_page` are used solely for the page indicator in the upper-left of
+    the image."""
+    pass

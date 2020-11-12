@@ -259,7 +259,7 @@ class UserStatsCommands(commands.Cog):
             else:
                 score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
         await ctx.trigger_typing()
-        image_object = await image_manip.make_player_best(score_docs, page, max_page)
+        image_object = await image_manip.make_player_best(score_docs, page, max_page, mod)
         await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{player_name}.png'))
 
     @commands.command(aliases=["tc"])
@@ -362,7 +362,7 @@ class UserStatsCommands(commands.Cog):
             else:
                 score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
         await ctx.trigger_typing()
-        image_object = await image_manip.make_team_best(score_docs, page, max_page)
+        image_object = await image_manip.make_team_best(score_docs, page, max_page, mod)
         await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{team_name}.png'))
     
     @commands.command(aliases=["ms"])
