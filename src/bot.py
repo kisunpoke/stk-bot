@@ -32,7 +32,8 @@ make roles and other things not hardcoded
 proper admin help
 admin commands
 check if restricted users return standard api responses
-add mod filters to the header text on images
+change certain template images to be actual templates with no table headers that are added on later
+
 
 teamstats
 playerstats

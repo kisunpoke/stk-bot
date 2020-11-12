@@ -176,10 +176,21 @@ class UserStatsCommands(commands.Cog):
         player_url = f'https://osu.ppy.sh/u/{player_doc["_id"]}'
         stat = player_doc["cached"]
 
-        #wow that's a tad unreadable
-        msg = (f"STK8 stats for {player_doc['user_name']}\n"
-               f"\n"
-               f"__Averages__\n"
+        #mods
+        mod_string = ""
+        for mod in stat["by_mod"]:
+            mod_stat = stat["by_mod"][mod]
+            if mod_stat['maps_played'] == 0:
+                text = "*None played.*"
+            else:
+                text = (f"**{mod}:**\n"
+                        f"W/L: {mod_stat['maps_won']}/{mod_stat['maps_lost']} - "
+                        f"{percentage(mod_stat['maps_won']/mod_stat['maps_played'])} winrate\n"
+                        f"{comma_sep(mod_stat['average_score'])} avg. score, {percentage(mod_stat['average_acc'])} avg. acc, {percentage(mod_stat['average_contrib'])} avg. contrib\n\n")
+            mod_string += text
+
+        #raw unreadability
+        msg = (f"__Averages__\n"
                f"**Avg. Score:** {comma_sep(stat['average_score'])} (#{stat['score_rank']})\n"
                f"**Avg. Accuracy:** {percentage(stat['average_acc'])} (#{stat['acc_rank']})\n"
                f"**Avg. Contrib:** {percentage(stat['average_contrib'])} (#{stat['contrib_rank']})\n"
@@ -191,12 +202,12 @@ class UserStatsCommands(commands.Cog):
                f"{percentage(stat['maps_won']/stat['maps_played'])})\n"
                f"\n"
                f"__Mod Information__\n"
-               f"sorry i forgot we don't have the technology for that yet")
+               f"{mod_string}")
         em_msg = discord.Embed(description=msg)
-        em_msg.set_author(name=player_doc["user_name"], url=player_url)
+        em_msg.set_author(name=player_doc["user_name"]+" - "+player_doc['team_name'], url=player_url)
         em_msg.set_thumbnail(url=player_doc["pfp_url"])
-        em_msg.set_footer(text=f"You can get a list of this player's scores with `playerbest {player_doc['user_name']}``. "
-                               f"You can also use `playercard {player_doc['user_name']}`` for their player card.")
+        em_msg.set_footer(text=f"You can get a list of this player's scores with \"pb {player_doc['user_name']}\". "
+                               f"You can also use \"pc {player_doc['user_name']}\" for their player card.")
         await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["pb"])
@@ -306,7 +317,41 @@ class UserStatsCommands(commands.Cog):
                 return None
             else:
                 team_doc = await db_get.get_team_document(team_name)
-        #derive from playerstats
+        stat = team_doc["cached"]
+
+        #mods
+        mod_string = ""
+        for mod in stat["by_mod"]:
+            mod_stat = stat["by_mod"][mod]
+            if mod_stat['maps_played'] == 0:
+                text = "*None played.*"
+            else:
+                text = (f"**{mod}:**\n"
+                        f"W/L: {mod_stat['maps_won']}/{mod_stat['maps_lost']} - "
+                        f"{percentage(mod_stat['maps_won']/mod_stat['maps_played'])} winrate\n"
+                        f"{comma_sep(mod_stat['average_score'])} avg. score, {percentage(mod_stat['average_acc'])} avg. acc\n\n")
+            mod_string += text
+
+        player_names = [(await db_get.get_player_document(player))["user_name"] for player in team_doc["players"]]
+
+        #raw unreadability
+        msg =  (f"__Averages__\n"
+                f"**Avg. Score:** {comma_sep(stat['average_score'])} (#{stat['score_rank']})\n"
+                f"**Avg. Accuracy:** {percentage(stat['average_acc'])} (#{stat['acc_rank']})\n"
+                f"\n"
+                f"__General__\n"
+                f"**Hits (300/100/50/miss):** {comma_sep(stat['hits']['300_count'])}/{comma_sep(stat['hits']['100_count'])}/"
+                f"{comma_sep(stat['hits']['50_count'])}/{comma_sep(stat['hits']['miss_count'])}\n"
+                f"**Maps played:** {stat['maps_played']} (W/L: {stat['maps_won']}/{stat['maps_lost']}, "
+                f"{percentage(stat['maps_won']/stat['maps_played'])})\n"
+                f"\n"
+                f"__Mod Information__\n"
+                f"{mod_string}")
+        em_msg = discord.Embed(description=msg)
+        em_msg.set_author(name=team_doc["_id"]+" - "+' • '.join(player_names))
+        em_msg.set_footer(text=f"You can get a list of this team's scores with \"tb {team_doc['_id']}\". "
+                                f"You can also use \"tc {team_doc['_id']}\" for their team card.")
+        await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["tb"])
     async def teambest(self, ctx, *params):
