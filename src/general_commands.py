@@ -12,6 +12,11 @@ class GeneralCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    async def ye(self, ctx, map_id):
+        import image_handling
+        await image_handling.get_banner(map_id)
+
+    @commands.command()
     async def help(self, ctx, command=None):
         if command is not None:
             help_embed = await help_generator(command)

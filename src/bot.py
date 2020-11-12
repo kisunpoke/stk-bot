@@ -29,7 +29,6 @@ implement text stats (same as above but text-only) #https://discordpy.readthedoc
 for leaderboards, show where the user stands on any given page
 /tmp for downloaded assets
 argparser for UserStatsCommands
-about command for bot
 list of pools?
 proper error handling
 make roles and other things not hardcoded
