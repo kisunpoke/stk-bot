@@ -112,8 +112,7 @@ The cluster structure is as follows:
     pool_id: str (of NM1, HD2, HR3, etc)
     map_type: str (of NM, HD, HR, etc)
     map_url: str
-    thumbnail_url: str
-    #full_res_stored: false #when we do full-size map cards, this might be needed
+    set_id: str
     meta:{
         map_artist: str
         map_song: str
@@ -352,7 +351,7 @@ async def add_pools(pool_data):
             'pool_id': map[3],
             'map_type': map[2],
             'map_url': f'https://osu.ppy.sh/b/{map[1]}',
-            'thumbnail_url': f'https://b.ppy.sh/thumb/{map_data["beatmapset_id"]}l.jpg',
+            'set_id': map_data["beatmapset_id"],
             'meta':{
                 'map_artist': map_data["artist"],
                 'map_song': map_data["title"],

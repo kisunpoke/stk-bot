@@ -10,6 +10,7 @@ import io
 
 import db_get
 from utils import percentage, comma_sep
+import image_handling
 
 fonts = {
     "s": ImageFont.truetype("src/static/Renogare-Regular.otf", 20),
@@ -61,20 +62,26 @@ async def make_team_best(score_docs, current_page, max_page):
     #table
     #x-dists: 70,116(left),266,876,1035,1172
     #y-dist: 39 each row
-    for row in range(0,len(data)):
-        banner_fp = "src/static/map-banners/cover.jpg"
+    for row, score in enumerate(score_docs):
+        map_doc = await db_get.get_map_document(score["diff_id"])
+
+        banner_fp = await image_handling.get_banner_fp(map_doc["set_id"])
         banner = Image.open(banner_fp, mode='r')
         banner = banner.resize((139,37))
 
         y_pos = (row*39)+216
-        draw_std(76, y_pos, "1") #numerical ranking
-        draw_std(267, y_pos, "9,999") #player name
+
+        draw_std(76, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        draw_std(267, y_pos, score["user_name"]) #player name
         #tuple refers to top-left corner, so half the banner's height is subtracted
         img.paste(banner, (406,y_pos-19)) #map banner
-        draw.line([546,y_pos-19,546,y_pos+19], colors["HR"], 5) #modline
-        draw.text((556, y_pos), truncate("text"), (255, 255, 255), font=fonts["m"],
+        draw.line([546,y_pos-19,546,y_pos+19], colors[score["map_type"]], 5) #modline
+        meta = map_doc["meta"]
+        full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
+        draw.text((556, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
                    align='left', anchor="lm") #map name
-        draw_std(1160, y_pos, "9,999") #score
+
+        draw_std(1160, y_pos, comma_sep(score["score"])) #score
 
     img_binary = io.BytesIO()
     img.save(img_binary, 'PNG')
@@ -209,7 +216,9 @@ async def make_player_best(score_docs, current_page, max_page):
     #x-dists: 70,116(left),266,876,1035,1172
     #y-dist: 39 each row, starting from 216
     for row, score in enumerate(score_docs):
-        banner_fp = "src/static/map-banners/cover.jpg"
+        map_doc = await db_get.get_map_document(score["diff_id"])
+
+        banner_fp = await image_handling.get_banner_fp(map_doc["set_id"])
         banner = Image.open(banner_fp, mode='r')
         banner = banner.resize((139,37))
 
@@ -220,7 +229,6 @@ async def make_player_best(score_docs, current_page, max_page):
         #tuple refers to top-left corner, so half the banner's height is subtracted
         img.paste(banner, (117,y_pos-19)) #map banner
         draw.line([257,y_pos-19,257,y_pos+19], colors[score["map_type"]], 5) #modline
-        map_doc = await db_get.get_map_document(score["diff_id"])
         meta = map_doc["meta"]
         full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
         draw.text((267, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
