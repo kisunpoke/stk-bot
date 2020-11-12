@@ -140,3 +140,4 @@ src/db_test.py
 src/team_commands.py
 main.env
 google-credentials.json
+tmp/
