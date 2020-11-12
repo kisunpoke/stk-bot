@@ -34,5 +34,4 @@ async def get_banner(set_id):
                     f = await aiofiles.open(banner_fp, mode='wb')
                     await f.write(await resp.read())
                     await f.close()
-    else:
-        pass
+    return banner_fp

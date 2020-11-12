@@ -14,7 +14,8 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def ye(self, ctx, map_id):
         import image_handling
-        await image_handling.get_banner(map_id)
+        img_fp = await image_handling.get_banner(map_id)
+        await ctx.send(file=discord.File(img_fp))
 
     @commands.command()
     async def help(self, ctx, command=None):
