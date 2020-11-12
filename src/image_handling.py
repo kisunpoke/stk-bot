@@ -4,13 +4,24 @@ import os
 import aiohttp        
 import aiofiles
 
+async def make_tmp():
+    """Check if tmp folder exists, create if it doesn't"""
+    #git doesn't make empty folders so
+    banner_dir = "./tmp"
+    print("making tmp dir")
+    if not os.path.exists(banner_dir):
+        os.mkdir(banner_dir)
+    print(os.path.abspath("./tmp"))
+
 async def make_banner_folder():
     """Check if banner folder exists, create if it doesn't"""
     #git doesn't make empty folders so
+    await make_tmp()
     banner_dir = "./tmp/map-banners"
     print("making banner dir")
     if not os.path.exists(banner_dir):
         os.mkdir(banner_dir)
+    print(os.path.abspath("./tmp/map-banners"))
 
 async def get_banner(set_id):
     banner_fp = f"./tmp/map-banners/{set_id}.jpg"
