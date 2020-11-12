@@ -33,8 +33,6 @@ proper admin help
 admin commands
 check if restricted users return standard api responses
 
-teamcard
-playercard
 teamstats
 playerstats
 mapbest
