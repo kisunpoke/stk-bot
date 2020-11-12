@@ -6,16 +6,11 @@ import pprint
 
 import utils
 import prompts
+import db_get
 
 class GeneralCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.command()
-    async def ye(self, ctx, map_id):
-        import image_handling
-        img_fp = await image_handling.get_banner(map_id)
-        await ctx.send(file=discord.File(img_fp))
 
     @commands.command()
     async def help(self, ctx, command=None):
@@ -35,6 +30,25 @@ class GeneralCommands(commands.Cog):
         embed = discord.Embed(description=desc)
         embed.set_author(name=utils.bot_name+" "+utils.bot_ver)
         await ctx.send(embed=embed)
+
+class UtilityCommands(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def pools(self, ctx):
+        meta_docs = await db_get.get_pool_metas()
+        if meta_docs:
+            desc = "Pools:\n\n"
+
+            for doc in meta_docs:
+                desc += f"**{doc['_id']}** - {doc['long_name']}\n"
+            embed = discord.Embed(description=desc)
+            embed.set_footer(text=f"You can use the short names (bolded) with the various map commands, such as mapbest.")
+            await ctx.send(embed=embed)
+
+        else:
+            await prompts.error_embed(self, ctx, "No pools available...")
 
 
 #i am not sure where else i should be putting this

@@ -35,7 +35,6 @@ async def get_meta_document():
     meta_collection = db["meta"]
     return await meta_collection.find_one({'_id': "main"})
 
-
 async def get_user_document(discord_id):
     """Get the DiscordUser document associated with a Discord ID.
     
@@ -352,3 +351,10 @@ async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None)
     is not found, this function returns `(None, None)`. If no scores are found, 
     `([], 0)` is returned."""
     pass
+
+async def get_pool_metas():
+    """Get the pool meta documents."""
+    db = client['mappools']
+    collection = db['meta']
+    cursor = collection.find()
+    return (await cursor.to_list(length=100))

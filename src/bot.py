@@ -28,7 +28,6 @@ implement cards (render leaderboards, player stats, team stats, etc)
 implement text stats (same as above but text-only) #https://discordpy.readthedocs.io/en/latest/faq.html#how-do-i-use-a-local-image-file-for-an-embed-image for histograms and others
 for leaderboards, show where the user stands on any given page
 argparser for UserStatsCommands
-list of pools?
 proper error handling
 make roles and other things not hardcoded
 proper admin help
@@ -51,6 +50,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
 bot.remove_command('help')
 
 bot.add_cog(general_commands.GeneralCommands(bot))
+bot.add_cog(general_commands.UtilityCommands(bot))
 bot.add_cog(staff_commands.AdminDatabaseCommands(bot))
 bot.add_cog(staff_commands.StaffCommands(bot))
 bot.add_cog(match_commands.MatchCommands(bot))
