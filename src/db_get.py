@@ -213,12 +213,12 @@ async def get_top_team_scores(team_name, page=1, mod=None):
 
     #the number of scores depends on what scores were requested
     mod_mapping = {
-        None: team_document["cached"]["maps_played"],
-        "NM": team_document["cached"]["by_mod"]["NM"]["maps_played"],
-        "HD": team_document["cached"]["by_mod"]["HD"]["maps_played"],
-        "HR": team_document["cached"]["by_mod"]["HR"]["maps_played"],
-        "DT": team_document["cached"]["by_mod"]["DT"]["maps_played"],
-        "FM": team_document["cached"]["by_mod"]["FM"]["maps_played"],
+        None: team_document["cached"]["total_scores"],
+        "NM": team_document["cached"]["by_mod"]["NM"]["total_scores"],
+        "HD": team_document["cached"]["by_mod"]["HD"]["total_scores"],
+        "HR": team_document["cached"]["by_mod"]["HR"]["total_scores"],
+        "DT": team_document["cached"]["by_mod"]["DT"]["total_scores"],
+        "FM": team_document["cached"]["by_mod"]["FM"]["total_scores"],
     }
 
     max_page = math.ceil(mod_mapping[mod]/10)

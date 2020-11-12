@@ -26,7 +26,7 @@ async def make_team_best(score_docs, current_page, max_page):
 
     def truncate(text, font="m"):
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
-        max_width = 510
+        max_width = 487
 
         font = fonts["m"]
         ellipsis_width, _ = font.getsize("...")
@@ -52,9 +52,8 @@ async def make_team_best(score_docs, current_page, max_page):
     draw_std(640, 105, " • ".join(player_names)) #player list
 
     #page number
-    draw.text((36, 137), "(page 1 of 1)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+    draw.text((36, 137), f"(page {current_page} of {max_page})", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
 
-    data = [1,2,3,4,5,6,7,8,9,10]
     colors = {
         "NM":(165,165,165),
         "HD":(255,192,0),
