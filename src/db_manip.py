@@ -519,7 +519,7 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     (at least partially by calling more functions)
 
     Takes the list `matches_data`, which is expected to be in the format
-    `[match_id, referee_id, referee_name, stage, bans, ignore_to_index]`.
+    `[match_id, referee_id, referee_name, stage, bans, ignore_indexes]`.
     - `match_id` is the MP id of the match.
     - `referee_id` is the referee's user ID. This can be used to ignore
     the referee's scores in a match.
@@ -527,8 +527,8 @@ async def add_scores(matches_data, *, create_index=False, ctx=None):
     - `stage` is the formal stage of that match, as in "Round of 32" or
     "Loser's Bracket Finals."
     - `bans` is a `str` of comma-separated map ids.
-    - `ignore_to_index` is the index of the last map to be ignored, with
-    all maps before it ignroed as well.
+    - `ignore_indexes` is the indexes of the maps to be ignored as a comma-
+    separated string ("0,1,3", for example).
 
     If this function is used to initialize the score/match database, then
     `create_index` should be True. This will create an index on the "score"

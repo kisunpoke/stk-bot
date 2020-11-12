@@ -9,6 +9,8 @@ import pprint
 import asyncio
 
 import prompts
+import osuapi
+import db_get
 
 #technically not used anywhere right now but here for future implementation
 def has_role(role_id):
@@ -33,22 +35,48 @@ class StaffCommands(commands.Cog):
             return False
 
     @commands.command()
-    async def addmatch(self, ctx, match_id, ignore_indexes=None, stage=None, bans=None, referee_id=None):
+    async def addmatch(self, ctx, match_id, bans=None, ignore_indexes=None, stage=None,  referee_id=None):
         """Add this match to the database and update all relevant data.
 
         This includes calls to update player and mappool data, as well as confirmation.
         """
-        #get match data via osuapi
-        #get list of maps from mappool meta doc based on pool_id
-        #return list of matches that used a map from the specified pool_id
-        #generate a confirmation embed
-        #actually execute db_manip funct
-        pass
+        if await db_get.get_match_document(match_id):
+            await prompts.error_embed(self.bot, ctx, "That match seems to have already been added!")
+            return None
+
+        ref_data = None
+        ref_name = None
+        ref_id = None
+        if referee_id is not None:
+            ref_data = await osuapi.get_player_data(referee_id)
+            ref_name = ref_data["username"]
+            ref_id = ref_data["user_id"]
+
+        prompt = (f"Are these correct?\n\n"
+                  f"**Match ID:** {match_id}\n"
+                  f"**Bans:** {bans if bans else '-'}\n"
+                  f"**Ignore indexes:** {ignore_indexes if ignore_indexes else '-'}\n"
+                  f"**Stage:** {stage if stage else '-'}\n"
+                  f"**Referee name:** {ref_id if ref_id else '-'}\n"
+                  f"**Referee ID:** {ref_name if ref_name else '-'}\n\n"
+                  f"(The command order is `match_id, bans, indexes, stage, referee`.))")
+        footer = (f"Please make sure you're only putting commas with no spaces between"
+                  f"your bans and indexes - `NM1,HR1` and `0,1,3`, for example. Put your "
+                  f"stage name (and other multi-word parameters) in quotes.")
+        if await prompts.confirmation_dialog(self.bot, ctx, prompt, footer):
+            match_data = [[match_id, ref_id, ref_name, stage, bans, ignore_indexes]]
+            await db_manip.add_scores(match_data)
+            await ctx.send("ok, added match")
+        else:
+            await ctx.send("ok, maybe some other time")
     
     @addmatch.error
     async def addmatch_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await prompts.error_embed(self.bot, ctx, "You must be part of staff to add a match!", error)
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await prompts.error_embed(self.bot, ctx, "Command order is `match_id, bans, indexes, stage, referee`"
+                                                     " - see `help addmatch` for more info")
         else:
             await prompts.error_embed(self.bot, ctx, "An error occurred:", error)
 

@@ -133,13 +133,13 @@ help = {
     },
     "addmatch":{
         "category":   "Staff Commands",
-        "signature": ("**addmatch** <match_id> [ignore_indexes] [stage] [bans] [referee_id]"),
+        "signature": ("**addmatch** <match_id> [bans] [ignore_indexes] [stage] [referee_id]"),
         "summary":   ("*Add a new match to the database. Ignores maps that aren’t in any tournament pool.*"),
         "parameters":(" • *match_id*: /mp link provided by osu!\n"
                       " • *ignore_index (optional)*: A comma-separated list (no spaces in between) of the match indices to ignore. Zero-indexed.\n"
                       " • *stage (optional)*: The full name of the current stage (Round of 32, Grand Finals, etc.)\n"
                       " • *bans (optional)*: A comma-separated list (no spaces in between) of the bans in shorthand notation (NM1, HR1, etc.)\n"
-                      " • *referee_id (optional)*: The ID of the player who reffed the match. Currently unused."),
+                      " • *referee_id (optional)*: The ID or username of the player who reffed the match. Currently unused."),
         "examples":  (" • `addmatch 59424609`: adds https://osu.ppy.sh/mp/59424609 to the database, updating map/player/etc. stats and some other things\n"
                       " • `addmatch 59424609 0,1,2,5`: same as above but ignores the first three maps and the sixth map in calculation\n"
                       " • `addmatch 59424609 0,1 “Round of 32” NM1,HR2`: ignores the first two maps (warmups), sets the stage to Round of 32, and notes that NM1 and HR2 were banned")

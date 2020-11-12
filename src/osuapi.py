@@ -56,7 +56,8 @@ class Mods(IntFlag):
         return mod_list
 
 async def get_player_data(username):
-    #well that's kinda bad
+    "Return full JSON response from the osu! API with the given username."
+    #inherently works with either ID or username, ID preferred
     async with aiohttp.ClientSession() as session:
         player_request = await session.get(f'https://osu.ppy.sh/api/get_user?k={api_key}&u={username}')
         player_data = await player_request.json()
