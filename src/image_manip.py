@@ -45,8 +45,11 @@ async def make_team_best(score_docs, current_page, max_page):
     draw = ImageDraw.Draw(img)
 
     #header
-    draw_std(640, 65, "team name", "l") #team name
-    draw_std(640, 105, "player list") #player list
+    player_doc = await db_get.get_player_document(score_docs[0]["user_id"])
+    team_doc = await db_get.get_team_document(player_doc["team_name"])
+    player_names = [(await db_get.get_player_document(player))["user_name"] for player in team_doc["players"]]
+    draw_std(640, 65, team_doc["_id"], "l") #team name
+    draw_std(640, 105, " • ".join(player_names)) #player list
 
     #page number
     draw.text((36, 137), "(page 1 of 1)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
@@ -100,13 +103,17 @@ async def make_team_card(team_doc):
     draw = ImageDraw.Draw(img)
 
     #header
+    '''
     players_str = ""
     for player in team_doc["players"]:
         player_name = (await db_get.get_player_document(player))["user_name"]
         players_str += player_name+" • "
     players_str = players_str[:-3] #cut excess bullet point and spaces
+    '''
+    #same as above, but this is how it originally was before i wrote tb/pb
+    player_names = [(await db_get.get_player_document(player))["user_name"] for player in team_doc["players"]]
     draw_std(640, 65, team_doc["_id"], "l") #team name
-    draw_std(640, 105, players_str) #players, bullet-separated
+    draw_std(640, 105, " • ".join(player_names)) #players, bullet-separated
 
     #average accuracy
     draw_std(335, 218, percentage(stat['average_acc'])) #accuracy value

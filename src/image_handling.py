@@ -1,4 +1,4 @@
-"""If we store any map bgs/banners and player icons, this would handle it."""
+"""Handles stored assets in /tmp, which is reset whenever Heroku feels like it"""
 
 import os
 import aiohttp        
