@@ -193,12 +193,21 @@ help = {
     "mapbest":{
         "category":   "User Stats",
         "signature": ("**mapbest/mb** <map_id> [page] [pool]"),
-        "summary":   ("*Shows the best scores of the selected map, filtered by mod if defined. 10 per page.*"),
+        "summary":   ("*Shows the best scores of the selected map. 10 per page.*"),
         "parameters":(" • *map_id*: Can either be shorthand pool notation (NM1, HR2, etc) or a beatmap ID (b/123456 - listed on main sheet).\n"
                       " • *page (optional)*: The page to return. 1 by default.\n"
                       " • *pool (optional)*: The pool (in shorthand notation - Ro32, GS, QF, SF, etc.) If no pool is given, then the most recently-released pool used in a match is used. Ignored if a beatmap ID is provided."),
         "examples":  (" • `mapbest NM1`: returns the first page of the highest scores for NM1 in the most recent pool used in a match.\n"
                       " • `mapbest 1734126 2`: returns the second page of the highest scores for [https://osu.ppy.sh/b/1734126](https://osu.ppy.sh/b/1734126) (in this tournament).")
+    },
+    "mapstats":{
+        "category":   "User Stats",
+        "signature": ("**mapstats/ms** <map_id> [pool]"),
+        "summary":   ("*Shows various statistics on a map.*"),
+        "parameters":(" • *map_id*: Can either be shorthand pool notation (NM1, HR2, etc) or a beatmap ID (b/123456 - listed on main sheet).\n"
+                      " • *pool (optional)*: The pool (in shorthand notation - Ro32, GS, QF, SF, etc.) If no pool is given, then the most recently-released pool used in a match is used. Ignored if a beatmap ID is provided."),
+        "examples":  (" • `mastats NM1`: returns stats for NM1 in the most recent pool used in a match.\n"
+                      " • `mapstats 1734126`: returns stats for https://osu.ppy.sh/b/1734126 (in this tournament).")
     },
     "playerbest":{
         "category":   "User Stats",
@@ -221,6 +230,14 @@ help = {
         "examples":  (" • `ps`: returns your own player stats (if username set)\n"
                       " • `ps ill onion`: returns ill onion’s player stats")
     },
+    "playercard":{
+        "category":   "User Stats",
+        "signature": ("**playercard/pc** [user]"),
+        "summary":   ("*Post the stats of a user in image form (a “card”).*"),
+        "parameters":(" • *user (optional)*: osu! username or osu! ID of the player. If you have a username set through `setuser`, leaving this field blank will default to the username you set. Spaces in a username are permitted (you shouldn’t have to quote your username in most cases)."),
+        "examples":  (" • `ps`: returns your own player card (if username set)\n"
+                      " • `ps ill onion`: returns ill onion’s player card")
+    },
     "teambest":{
         "category":   "User Stats",
         "signature": ("**teambest/tb** [team] [page] [mod]"),
@@ -241,6 +258,21 @@ help = {
         "parameters":(" • *team (optional)*: Team name. If you have a username set through `setuser`, leaving this field blank will default to the team you are associated with. Spaces in a team name are permitted (you shouldn’t have to quote the team name or use exact capitalization)."),
         "examples":  (" • `ts`: returns your own team’s stats (if username set)\n"
                       " • `ts idk`: returns idk’s team stats")
+    },
+    "teamcard":{
+        "category":   "User Stats",
+        "signature": ("**teamcard/tc** [user]"),
+        "summary":   ("*Post the stats of a team in image form (a “card”).*"),
+        "parameters":(" • *team (optional)*: Team name. If you have a username set through `setuser`, leaving this field blank will default to the team you are associated with. Spaces in a team name are permitted (you shouldn’t have to quote the team name or use exact capitalization)."),
+        "examples":  (" • `ts`: returns your own team’s card (if username set)\n"
+                      " • `ts idk`: returns idk’s team card")
+    },
+    "pools":{
+        "category":   "Utility",
+        "signature": ("**pools**"),
+        "summary":   ("*Post the shorthand and full names of all pools available. Useful for `mapstats` and `mapbest`.*"),
+        "parameters":("*none*"),
+        "examples":  ("`pools`: returns the pools")
     }
 }
 

@@ -33,6 +33,7 @@ proper error handling
 make roles and other things not hardcoded
 proper admin help
 admin commands
+check if restricted users return standard api responses
 
 teamcard
 playercard
