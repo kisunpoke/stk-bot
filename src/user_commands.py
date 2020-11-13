@@ -269,6 +269,9 @@ class UserStatsCommands(commands.Cog):
                 return None
             else:
                 score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
+                if max_page == 0:
+                    await prompts.error_embed(self, ctx, "You don't seem to have scores yet.")
+                    return None
         await ctx.trigger_typing()
         image_object = await image_manip.make_player_best(score_docs, page, max_page, mod)
         await ctx.send(file=discord.File(fp=image_object, filename=f'player_best_{player_name}-{page}.png'))
@@ -406,6 +409,9 @@ class UserStatsCommands(commands.Cog):
                 return None
             else:
                 score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
+                if max_page == 0:
+                    await prompts.error_embed(self, ctx, "Your team doesn't seem to have scores yet.")
+                    return None
         await ctx.trigger_typing()
         image_object = await image_manip.make_team_best(score_docs, page, max_page, mod)
         await ctx.send(file=discord.File(fp=image_object, filename=f'team_best_{team_name}-{page}.png'))

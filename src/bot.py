@@ -57,13 +57,12 @@ bot.add_cog(user_commands.UserStatsCommands(bot))
 async def on_ready():
     print('ready!')
 
-'''
+
 @bot.event
 async def on_command_error(ctx, exception):
     #check the exception type - command not found, params incorrect, runtime error, etc.
     print(exception)
-    await prompts.error_embed(bot, ctx, f"The following error occurred: {exception}")
-'''
+    await prompts.error_embed(bot, ctx, "An error occurred:", str(exception))
 
 bot.run(token)
 
