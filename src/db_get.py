@@ -339,7 +339,9 @@ async def get_top_tournament_teams(leaderboard_field="score", page=1):
 async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None):
     """Get the best scores (as documents) in a certain category.
     
-    Returns the tuple (<scores>, max_pages).
+    Returns the tuple `(<scores>, page, max_pages)`.
+    
+    Parameters:
     - `leaderboard` is any of `"acc"`, `"score"`, or `"contrib"`.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
@@ -348,10 +350,32 @@ async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None)
     - `mod` is the mod, in shorthand notation (NM/HR/...) to filter scores with. Shorthand pool 
     prefixes are used, with valid mods in the array `["NM", "HR", "HD", "DT", "FM"]`.
     
-    Note this function does no additional work towards generating a Discord embed. If the player
-    is not found, this function returns `(None, None)`. If no scores are found, 
-    `([], 0)` is returned."""
-    pass
+    Note this function does no additional work towards generating a Discord embed. 
+    If no scores are found, `([], 0, <page>)` is returned."""
+    score_collection = client['matches_and_scores']['scores']
+
+    score_count = await score_collection.estimated_document_count()
+
+    max_page = math.ceil(score_count/10)
+    if page < 0:
+        page = 1
+    if page > max_page:
+        page = max_page
+
+    #lol
+    fields = {
+        "score": "score",
+        "acc": "accuracy",
+        "contrib": "contrib",
+    }
+    #if leaderboard_field not in fields return None ?
+    #we can just do command-level validation
+
+    if mod:
+        cursor = score_collection.find({"map_type": mod}).sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
+    else:
+        cursor = score_collection.find().sort(fields[leaderboard_field], -1).skip((page-1)*10).limit(10)
+    return (await cursor.to_list(length=10), page, max_page)
 
 async def get_pool_metas():
     """Get the pool meta documents."""

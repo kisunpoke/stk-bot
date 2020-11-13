@@ -72,7 +72,7 @@ The cluster structure is as follows:
     match_id: string,
     match_name: string,
     match_index: int,
-    map_type: string*,
+    map_type: string*, (of NM, HD, HR, etc)
     pool: string*,
     stage: string*,
 }

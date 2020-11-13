@@ -514,17 +514,89 @@ async def make_map_best(score_docs, current_page, max_page, invoker_doc = None):
     img_binary.seek(0)
     return img_binary
 
-async def make_score_best(score_docs, current_page, max_page, mod_filter = None):
+async def make_server_best(score_docs, current_page, max_page, mod_filter = None, category = "score"):
     """Generate and return the best scores of the tournament as an image.
     
     - `score_docs` is an array of score documents, 10 or fewer, of the best scores.
     This should be found through `db_get.get_top_team_scores()` prior to calling this function.
     - `current_page` is the page from `db_get`.
     - `max_page` is also the page from `db_get`.
+    - `mod_filter` is the mod these documents are filtered by, if applicable.
+    - `category` is the leaderboard category these documents are sorted by, if applicable.
     
     `current_page` and `max_page` are used solely for the page indicator in the upper-left of
     the image."""
-    pass
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+
+    def truncate(text, font="m"):
+        """Truncates long strings to the desired max width and adds an ellipsis if needed."""
+        max_width = 487
+
+        font = fonts["m"]
+        ellipsis_width, _ = font.getsize("...")
+
+        width, _ = font.getsize(text)
+        if width>max_width:
+            while width>(max_width-ellipsis_width):
+                text = text[:-1]
+                width, _ = font.getsize(text)
+            text += "..."
+        return text
+    #literally a copypaste of teambest lol
+
+    player_card_base_img_fp = "src/static/score_1.png"
+    img = Image.open(player_card_base_img_fp, mode='r')
+
+    draw = ImageDraw.Draw(img)
+
+    #header
+    draw_std(640, 65, f"Best Plays - {category}", "l") #header 1
+    #draw_std(640, 105, " • ".join(player_names)) #header 2
+
+    #page number
+    page_text = f"(page {current_page} of {max_page})" 
+    if mod_filter:
+        page_text += f" ({mod_filter})"
+    draw.text((36, 137), page_text, (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    colors = {
+        "NM":(165,165,165),
+        "HD":(255,192,0),
+        "HR":(255,0,0),
+        "DT":(0,176,240),
+        "FM":(146,208,80),
+        "TB":(146,208,80)
+    }
+    #table
+    #x-dists: 70,116(left),266,876,1035,1172
+    #y-dist: 39 each row
+    for row, score in enumerate(score_docs):
+        map_doc = await db_get.get_map_document(score["diff_id"])
+
+        banner_fp = await image_handling.get_banner_fp(map_doc["set_id"])
+        banner = Image.open(banner_fp, mode='r')
+        banner = banner.resize((139,37))
+
+        y_pos = (row*39)+216
+
+        draw_std(76, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        draw_std(267, y_pos, score["user_name"]) #player name
+        #tuple refers to top-left corner, so half the banner's height is subtracted
+        img.paste(banner, (406,y_pos-19)) #map banner
+        draw.line([546,y_pos-19,546,y_pos+19], colors[score["map_type"]], 5) #modline
+        meta = map_doc["meta"]
+        full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
+        draw.text((556, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
+                   align='left', anchor="lm") #map name
+
+        draw_std(1160, y_pos, comma_sep(score["score"])) #score
+
+    img_binary = io.BytesIO()
+    img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
 
 async def make_averagep_best(player_docs, current_page, max_page, category, invoker_name=None):
     """Generate and return the best players of the tournament in a certain category as an image.

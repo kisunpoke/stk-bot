@@ -33,6 +33,8 @@ proper admin help
 admin commands
 check if restricted users return standard api responses
 change certain template images to be actual templates with no table headers that are added on later
+change serverbest to have a thinner map column with a blank last and second-to-last column
+and return teambest to original
 
 matchstats
 averagelbp

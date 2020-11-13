@@ -14,11 +14,11 @@ from utils import percentage, comma_sep
 def argparser(params):
     """For commands that use pagination, mods, and a variable first parameter.
 
+    Returns `(<first param>, page, mod)`.
     The variable parameter *must* come first. Defaults are:
     - `param_1 = None`
     - `page = 1`, any `int` less than 1000
-    - `mod = None`, valid mods are `["NM", "HD", "HR", "DT", "FM"]`
-    Returns `(<first param>, page, mod)`."""
+    - `mod = None`, valid mods are `["NM", "HD", "HR", "DT", "FM"]`."""
     param_1 = None
     page = 1
     mod = None
@@ -467,14 +467,25 @@ class UserStatsCommands(commands.Cog):
         await ctx.send(file=discord.File(fp=image_object, filename=f'map_best_{score_docs[0]["diff_id"]}-{page}.png'))    
 
     @commands.command(aliases=["sb"])
-    async def serverbest(self, ctx, leaderboard="score", page=1, mod=None):
+    async def serverbest(self, ctx, *params):
         """Post the leaderboard rankings of every score.
         
-        - `leaderboard` is any of "acc", "score", or "contrib." 
+        - `leaderboard` is any of "acc", "score", or "contrib." "score" by default.
         - `page` works the same as every similar command; 10 per page, redirects for <1
         or > the maximum.
         - `mod` can be any of ["NM", "HD", "HR", "DT", or "FM"]."""
-        pprint.pprint(await db_get.get_top_tournament_scores(leaderboard, page, mod))
+        leaderboard_category, page, mod = argparser(params)
+        if not leaderboard_category:
+            leaderboard_category = "score"
+        if leaderboard_category.lower() not in ["score", "acc", "contrib"]:
+            await prompts.error_embed(self.bot, ctx, 'Not a valid leaderboard category - '
+                                      '`score`, `acc`, and `contrib` are allowed.')
+            return None
+        score_docs, page, max_page = await db_get.get_top_tournament_scores(leaderboard_category, page, mod)
+        await ctx.trigger_typing()
+        image_object = await image_manip.make_server_best(score_docs, page, max_page, mod, leaderboard_category)
+        await ctx.send(file=discord.File(fp=image_object, filename=f'server_best-{page}.png')) 
+
 
     @commands.command(aliases=["avglbp", "averageleaderboardp"])
     async def averagelbp(self, ctx, leaderboard="score", page=1):
