@@ -447,7 +447,7 @@ class UserStatsCommands(commands.Cog):
         full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
         em_msg.set_author(name=full_name, url=f"https://osu.ppy.sh/b/{map_doc['_id']}")
         em_msg.set_thumbnail(url=f"https://b.ppy.sh/thumb/{map_doc['set_id']}l.jpg")
-        em_msg.set_footer(text=f"You can get the best scores with \"mb {map_doc['_id']}\".")
+        em_msg.set_footer(text=f"You can get this map's leaderboard with \"mb {map_doc['_id']}\".")
         await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["mb"])
@@ -470,7 +470,6 @@ class UserStatsCommands(commands.Cog):
         image_object = await image_manip.make_map_best(score_docs, page, max_page, user_doc)
         await ctx.send(file=discord.File(fp=image_object, filename=f'map_best_{score_docs[0]["diff_id"]}-{page}.png'))    
 
-#use the same bg and card system as teambest
     @commands.command(aliases=["sb"])
     async def serverbest(self, ctx, leaderboard="score", page=1, mod=None):
         """Post the leaderboard rankings of every score.

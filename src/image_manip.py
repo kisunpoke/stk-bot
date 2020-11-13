@@ -52,7 +52,7 @@ async def make_team_best(score_docs, current_page, max_page, mod_filter = None):
             text += "..."
         return text
 
-    player_card_base_img_fp = "src/static/teambest.png"
+    player_card_base_img_fp = "src/static/score_1.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
