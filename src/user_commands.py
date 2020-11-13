@@ -11,6 +11,36 @@ import prompts
 import image_manip
 from utils import percentage, comma_sep
 
+def argparser(params):
+    """For commands that use pagination, mods, and a variable first parameter.
+
+    The variable parameter *must* come first. Defaults are:
+    - `param_1 = None`
+    - `page = 1`, any `int` less than 1000
+    - `mod = None`, valid mods are `["NM", "HD", "HR", "DT", "FM"]`
+    Returns `(<first param>, page, mod)`."""
+    param_1 = None
+    page = 1
+    mod = None
+    #try to determine what the mods and pages are, last param to first
+    #if we parse something that's clearly not a number or a mod we assume the remainder
+    #composes the first parameter
+    for index in range(1,len(params)+1):
+            if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
+                #fields in mongodb are case-sensitive
+                mod = params[-index].upper()
+            elif params[-index].isdigit() and int(params[-index])<1000:
+                page = int(params[-index])
+            else:
+                #the remainder is assumed to be the first parameter, at which point we stop
+                if index == 1:
+                    #slicing from zero doesn't work
+                    param_1 = " ".join(params)
+                else:
+                    param_1 = " ".join(params[:-(index-1)])
+                break
+    return (param_1, page, mod)
+
 class UserConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -232,24 +262,7 @@ class UserStatsCommands(commands.Cog):
         Parameters are checked from last to first until something that is definitely not a mod
         or a page number is found, at which point that is assumed to be the username. Defaults
         apply if `user`, `page`, or `mod` wasn't changed by this check."""
-        player_name = None
-        page = 1
-        mod = None
-        #determine what each parameter MIGHT be, last to first
-        for index in range(1,len(params)+1):
-            if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
-                #fields in mongodb are case-sensitive
-                mod = params[-index].upper()
-            elif params[-index].isdigit() and int(params[-index])<1000:
-                page = int(params[-index])
-            else:
-                #the remainder is assumed to be the username, at which point we stop
-                if index == 1:
-                    #slicing from zero doesn't work
-                    player_name = " ".join(params)
-                else:
-                    player_name = " ".join(params[:-(index-1)])
-                break
+        player_name, page, mod = argparser(params)
         if player_name:
             score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
             if score_docs is None and max_page is None:
@@ -376,24 +389,7 @@ class UserStatsCommands(commands.Cog):
         Parameters are checked from last to first until something that is definitely not a mod
         or a page number is found, at which point that is assumed to be the username. Defaults
         apply if `team`, `page`, or `mod` wasn't changed by this check."""
-        team_name = None
-        page = 1
-        mod = None
-        #determine what each parameter MIGHT be, last to first
-        for index in range(1,len(params)+1):
-            if params[-index].upper() in ["NM", "HD", "HR", "DT", "FM"]:
-                #fields in mongodb are case-sensitive
-                mod = params[-index].upper()
-            elif params[-index].isdigit() and int(params[-index])<1000:
-                page = int(params[-index])
-            else:
-                #the remainder is assumed to be the username, at which point we stop
-                if index == 1:
-                    #slicing from zero doesn't work
-                    team_name = " ".join(params)
-                else:
-                    team_name = " ".join(params[:-(index-1)])
-                break
+        team_name, page, mod = argparser(params)
         if team_name:
             score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
             if score_docs is None and max_page is None:
