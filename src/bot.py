@@ -34,9 +34,6 @@ admin commands
 check if restricted users return standard api responses
 change certain template images to be actual templates with no table headers that are added on later
 
-
-teamstats
-playerstats
 mapbest
 maplb
 

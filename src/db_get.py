@@ -244,6 +244,7 @@ async def get_top_team_scores(team_name, page=1, mod=None):
 async def get_top_map_scores(map_id, page=1, pool=None):
     """Get the top n scores (as documents) of a map.
     
+    Returns `([<documents>], page, max_page)`.
     - `map_id` can be either the shorthand name of the map in the pool ("NM1") or the full diff ID.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,
@@ -252,8 +253,8 @@ async def get_top_map_scores(map_id, page=1, pool=None):
     - `pool` is the shorthand pool name. If not defined, `map_id` must be a diff id resolvable with
     `determine_pool()`.
     
-    Note this function does no additional work towards generating a Discord embed. If the player
-    is not found, this function returns `(None, None, None)`. If no scores are found but the player exists, 
+    Note this function does no additional work towards generating a Discord embed. If the map
+    is not found, this function returns `(None, None, None)`. If no scores are found but the map exists, 
     `([], 0, <page>)` is returned."""
     map_document = await get_map_document(map_id)
     if not map_document:
@@ -358,3 +359,29 @@ async def get_pool_metas():
     collection = db['meta']
     cursor = collection.find()
     return (await cursor.to_list(length=100))
+
+async def get_best_user_score(map_id, player):
+    """Get the player's best score on the specified map_id.
+    
+    Returns the tuple `(best_score_doc, rank, extra_count)` if found:
+    - `best_score_doc` is the Score document of this player's best score on this map.
+    - `rank` is the numerical ranking of this score.
+    - `extra_count` is the number of additional scores this user has on this map,
+    excluding their best score.
+    If the player has no score on this map, returns (None, 0, 0).
+    If the player or the map doesn't exist, returns (None, None, None)."""
+    map_document = await get_map_document(map_id)
+    if not map_document:
+        return (None, None, None)
+    player_document = await get_player_document(player)
+    if not player_document:
+        return (None, None, None)
+    
+    score_collection = client['matches_and_scores']['scores']
+    highest_score_doc = await score_collection.find_one({'user_id': player_document["_id"], 'diff_id': map_document["_id"]}, sort=[("score", -1)])
+    if not highest_score_doc:
+        return (None, 0, 0)
+    extra_count = (await score_collection.count_documents({'user_id': player_document["_id"], 'diff_id': map_document["_id"]}))-1
+    rank = (await score_collection.count_documents({'diff_id': map_document["_id"], 'score': {"$gt": highest_score_doc["score"]}}))+1
+    return (highest_score_doc, rank, extra_count)
+    

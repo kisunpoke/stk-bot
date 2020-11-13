@@ -1,12 +1,15 @@
 """Async functions for generating and returning images.
 
 Includes team/player card generation and image-based statistics as needed.
-These functions only take documents to allow for validation at the command level.
+These functions primarily take documents to allow for validation at the command level.
+However, player scores separated from the main set of documents passed call `db_get`
+functions here.
 """
 #https://stackoverflow.com/questions/33101935/convert-pil-image-to-byte-array
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 import matplotlib.pyplot as plt
 import io
+import math
 
 import db_get
 from utils import percentage, comma_sep
@@ -378,19 +381,138 @@ async def make_player_card(player_doc):
     img_binary.seek(0)
     return img_binary
 
-async def make_map_best(score_docs, current_page, max_page, player_score = None):
+async def make_map_best(score_docs, current_page, max_page, invoker_doc = None):
     """Generate and return a map leaderboard (as a discord.py-compatible image).
     
     - `score_docs` is an array of score documents, 10 or fewer, of the map's scores.
     This should be found through `db_get.get_top_map_scores()` prior to calling this function.
     - `current_page` is the page from `db_get`.
     - `max_page` is also the page from `db_get`.
-    - `player_score` should be the best score document of the command invoker on this map,
-    if applicable.
+    - `invoker_doc` should be the User document of the invoker if player is set.
+    This calls a `db_get` function.
     
     `current_page` and `max_page` are used solely for the page indicator in the upper-left of
     the image."""
-    pass
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
+
+    def to_standard_size(img):
+        """Resize the image to 1280x720px. Unused."""
+        width, height = img.size
+        multiplier = max(1280/width, 720/height)
+        resized = img.resize((int(width*multiplier), int(height*multiplier)))
+        cropped = resized.crop((0,0,1280,720))
+        return cropped
+
+    def to_banner_size(img):
+        """Resize banner to take up full width of the main image"""
+        width, height = img.size
+        multiplier = 1280/width
+        resized = img.resize((int(width*multiplier), int(height*multiplier)))
+        return resized
+    
+    def apply_gradient(img, gradient_start=0.3, gradient_duration=0.2):
+        """Apply transparency gradient.
+
+        - `gradient_start` should be between 0 and 1
+        - `gradient_duration` should also be between 0 and 1 where
+        `gradient_start+gradient_duration <= 1`, but other values do work
+        
+        from https://stackoverflow.com/questions/40948710/vertically-fade-an-image-with-transparent-background-to-transparency-using-pytho
+        https://stackoverflow.com/questions/19235664/vertically-fade-image-to-transparency-using-python-pil-library/19235788#19235788"""
+        im = img
+        width, height = im.size
+        pixels = im.load()
+        for y in range(height):
+            for x in range(width):
+                initial_alpha = pixels[x, y][3] #iterating over every pixel, an rgba tuple (r,g,b,a)
+                #take current pixel height and subtract by the complete height*gradient_start
+                #height*gradient_start represents the pixel at which we start changing the opacity
+                #if this value is negative, then the alpha remains for this pixel (as we are not at the gradient_start yet, and the output alpha is > initial_alpha)
+                #if the value is nonnegative it represents the number of pixels after the gradient start
+                #this is then divided by height to yield a decimal representing how far into the gradient duration we are
+                #if this value is further than the gradient duration itself, then alpha evaluates to <0 and so we have already
+                #passed the end of the gradient
+                #since gradient duration is relative to the full image (not just the gradient part)
+                #that is then divided by the gradient duration itself to yield an opacity multiplier
+                #and we finally multiply by 255 to get the final opacity
+                alpha = initial_alpha-int((y - height*gradient_start)/height/gradient_duration * 255)
+                if alpha <= 0:
+                    alpha = 0
+                pixels[x, y] = pixels[x, y][:3] + (alpha,) #get rgb and append alpha
+        for y in range(y, height):
+            for x in range(width):
+                pixels[x, y] = pixels[x, y][:3] + (0,)
+        return im
+    map_doc = await db_get.get_map_document(score_docs[0]["diff_id"])
+    
+    base_fp = "src/static/bg-std.png"
+    base_img = Image.open(base_fp, mode='r')
+    #base_img = Image.new("RGBA", (1280, 720), color="#000000")
+    #base_img = Image.new("RGBA", (1280, 720))
+    draw = ImageDraw.Draw(base_img)
+
+    banner_fp = await image_handling.get_banner_fp(map_doc["set_id"])
+    banner_img = Image.open(banner_fp, mode='r')
+    banner_img = to_banner_size(banner_img)
+    enhancer = ImageEnhance.Brightness(banner_img)
+    banner_img_darkened = enhancer.enhance(0.45).convert("RGBA")
+    banner_final = apply_gradient(banner_img_darkened)
+    base_img.paste(banner_final, (0,0), banner_final)
+
+    grid_fp = "src/static/maplb-grid-base.png"
+    #https://stackoverflow.com/questions/31273592/valueerror-bad-transparency-mask-when-pasting-one-image-onto-another-with-pyt
+    grid_img = Image.open(grid_fp, mode='r').convert("RGBA")
+    base_img.paste(grid_img, (0,0), grid_img)
+
+    #header
+    draw_std(640, 65, "Top Scores", "l") #static
+    meta = map_doc["meta"]
+    full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
+    draw_std(640, 105, full_name) #full name
+
+    #page number
+    draw.text((36, 137), f"(page {current_page} of {max_page})", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    #table
+    #x-dists: 70,116(left),266,876,1035,1172
+    #y-dist: 39 each row
+    for row, score in enumerate(score_docs):
+        y_pos = (row*39)+216
+        draw_std(54, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        draw_std(214, y_pos, score["user_name"]) #player name
+        draw_std(417, y_pos, comma_sep(score["score"])) #score
+        draw_std(561, y_pos, percentage(score["accuracy"])) #acc
+        hits = (f"{comma_sep(score['hits']['300_count'])}/{comma_sep(score['hits']['100_count'])}/"
+                f"{comma_sep(score['hits']['50_count'])}/{comma_sep(score['hits']['miss_count'])}")
+        draw_std(722, y_pos, hits) #hits
+        draw_std(881, y_pos, comma_sep(score["combo"])+"x") #combo
+
+    if invoker_doc["osu_id"]:
+        #get player, get best score, check if rank of best score is already on this page
+        #if not, do everything below
+        score, rank, extra_count = await db_get.get_best_user_score(score_docs[0]["diff_id"], invoker_doc["osu_id"])
+        if math.floor(rank/10) != current_page-1:
+            y_pos = 645
+            draw_std(54, y_pos-39, "...") #ellipsis
+            draw_std(54, y_pos, rank) #numerical ranking
+            draw_std(214, y_pos, invoker_doc["osu_name"]) #player name
+            draw_std(417, y_pos, comma_sep(score["score"])) #score
+            draw_std(561, y_pos, percentage(score["accuracy"])) #acc
+            hits = (f"{comma_sep(score['hits']['300_count'])}/{comma_sep(score['hits']['100_count'])}/"
+                    f"{comma_sep(score['hits']['50_count'])}/{comma_sep(score['hits']['miss_count'])}")
+            draw_std(722, y_pos, hits) #hits
+            draw_std(881, y_pos, comma_sep(score["combo"])+"x") #combo
+            if extra_count > 0:
+                draw.text((54, y_pos+39), f"(+{extra_count} more)", (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    #i guess you have to seek before you actually do the thing
+    #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
+    img_binary = io.BytesIO()
+    base_img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
 
 async def make_score_best(score_docs, current_page, max_page, mod_filter = None):
     """Generate and return the best scores of the tournament as an image.
@@ -404,7 +526,7 @@ async def make_score_best(score_docs, current_page, max_page, mod_filter = None)
     the image."""
     pass
 
-async def make_averagep_best(player_docs, current_page, max_page, category, invoker_doc=None):
+async def make_averagep_best(player_docs, current_page, max_page, category, invoker_name=None):
     """Generate and return the best players of the tournament in a certain category as an image.
     
     - `player_docs` is an array of player documents, 10 or fewer, of the map's scores.
@@ -412,13 +534,14 @@ async def make_averagep_best(player_docs, current_page, max_page, category, invo
     - `current_page` is the page from `db_get`.
     - `max_page` is also the page from `db_get`.
     - `category` should be the leaderboard category.
-    - `invoker_doc` should be the player document of the command invoker, if applicable.
+    - `invoker_doc` should be the User document of the command invoker if player is set.
+    Calls `db_get` functions.
     
     `current_page` and `max_page` are used solely for the page indicator in the upper-left of
     the image."""
     pass
 
-async def make_averaget_best(team_docs, current_page, max_page, category, invoker_doc=None):
+async def make_averaget_best(team_docs, current_page, max_page, category, invoker_name=None):
     """Generate and return the best teams of the tournament in a certain category as an image.
     
     - `team_docs` is an array of player documents, 10 or fewer, of the map's scores.
@@ -426,7 +549,8 @@ async def make_averaget_best(team_docs, current_page, max_page, category, invoke
     - `current_page` is the page from `db_get`.
     - `max_page` is also the page from `db_get`.
     - `category` should be the leaderboard category.
-    - `invoker_doc` should be the team document of the command invoker, if applicable.
+    - `invoker_doc` should be the User document of the command invoker if player is set.
+    Calls a `db_get` function.
     
     `current_page` and `max_page` are used solely for the page indicator in the upper-left of
     the image."""

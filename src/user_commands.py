@@ -147,7 +147,7 @@ class UserStatsCommands(commands.Cog):
                 player_doc = await db_get.get_player_document(player_name)
         await ctx.trigger_typing()
         image_object = await image_manip.make_player_card(player_doc)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'player_stats_{player_name}.png'))
+        await ctx.send(file=discord.File(fp=image_object, filename=f'player_card_{player_name}.png'))
 
     @commands.command(aliases=["ps"])
     async def playerstats(self, ctx, *player):
@@ -271,7 +271,7 @@ class UserStatsCommands(commands.Cog):
                 score_docs, page, max_page = await db_get.get_top_player_scores(player_name, page, mod)
         await ctx.trigger_typing()
         image_object = await image_manip.make_player_best(score_docs, page, max_page, mod)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{player_name}.png'))
+        await ctx.send(file=discord.File(fp=image_object, filename=f'player_best_{player_name}-{page}.png'))
 
     @commands.command(aliases=["tc"])
     async def teamcard(self, ctx, *team):
@@ -295,7 +295,7 @@ class UserStatsCommands(commands.Cog):
                 team_doc = await db_get.get_team_document(team_name)
         await ctx.trigger_typing()
         image_object = await image_manip.make_team_card(team_doc)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{team_name}.png'))
+        await ctx.send(file=discord.File(fp=image_object, filename=f'team_card_{team_name}.png'))
 
     @commands.command(aliases=["ts"])
     async def teamstats(self, ctx, *team):
@@ -408,7 +408,7 @@ class UserStatsCommands(commands.Cog):
                 score_docs, page, max_page = await db_get.get_top_team_scores(team_name, page, mod)
         await ctx.trigger_typing()
         image_object = await image_manip.make_team_best(score_docs, page, max_page, mod)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'team_stats_{team_name}.png'))
+        await ctx.send(file=discord.File(fp=image_object, filename=f'team_best_{team_name}-{page}.png'))
     
     @commands.command(aliases=["ms"])
     async def mapstats(self, ctx, map_id, pool=None):
@@ -430,7 +430,18 @@ class UserStatsCommands(commands.Cog):
         or > the maximum.
         - `pool` is shorthand pool notation (QF, GF, Ro32, etc). Ignored if
         map_id is a beatmap ID."""
-        pprint.pprint(await db_get.get_top_map_scores(map_id, page, pool))
+        score_docs, page, max_page = await db_get.get_top_map_scores(map_id, page, pool)
+        if score_docs is None and max_page is None:
+            await prompts.error_embed(self.bot, ctx, "That map couldn't be found!")
+        elif max_page == 0:
+            await prompts.error_embed(self.bot, ctx, "This map has no scores!")
+        user_doc = await db_get.get_user_document(ctx.message.author.id)
+        await ctx.trigger_typing()
+        image_object = await image_manip.make_map_best(score_docs, page, max_page, user_doc)
+        await ctx.send(file=discord.File(fp=image_object, filename=f'map_best_{score_docs[0]["diff_id"]}-{page}.png'))
+        
+
+        
 
 #use the same bg and card system as teambest
     @commands.command(aliases=["sb"])

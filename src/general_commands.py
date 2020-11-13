@@ -11,6 +11,11 @@ import db_get
 class GeneralCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.command()
+    async def tar(self, ctx, map_id, player):
+        import pprint
+        pprint.pprint(await db_get.get_best_user_score(map_id, player))
 
     @commands.command()
     async def help(self, ctx, command=None):

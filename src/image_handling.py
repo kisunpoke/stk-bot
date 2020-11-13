@@ -23,6 +23,7 @@ async def make_banner_folder():
         os.mkdir(banner_dir)
 
 async def get_banner_fp(set_id):
+    """Returns the banner filepath for set_id, retrieving and saving if needed."""
     banner_fp = f"./tmp/map-banners/{set_id}.jpg"
     if not os.path.exists(banner_fp):
         await make_banner_folder()

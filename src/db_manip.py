@@ -1164,6 +1164,8 @@ async def rebuild_all(bot, ctx, sheet_id):
     await add_scores(data['matches'], create_index=True, ctx=ctx)
     await ctx.send("done!!")
 
+#async def rebuild_single()
+
 async def create_discord_user(id):
     """Initialize a new DiscordUser document.
     
