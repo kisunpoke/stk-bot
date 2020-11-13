@@ -418,13 +418,37 @@ class UserStatsCommands(commands.Cog):
     
     @commands.command(aliases=["ms"])
     async def mapstats(self, ctx, map_id, pool=None):
-        """Post the nth page of a map's best scores.
+        """Post a map's stats.
         
         - `map_id` can either be a beatmap ID (b/...) or standard notation
         (NM1, HR2, etc.)
         - `pool` is shorthand pool notation (QF, GF, Ro32, etc). Ignored if
         map_id is a beatmap ID."""
-        pprint.pprint(await db_get.get_map_document(map_id, pool))
+        map_doc = await db_get.get_map_document(map_id, pool)
+        if not map_doc:
+            await prompts.error_embed("Couldn't find that map...")
+            return None
+        meta = map_doc["meta"]
+        stat = map_doc["stats"]
+        sr = f"{float(meta['star_rating']):,.2f}"
+        msg =  (f"{sr}★ - {meta['bpm']} BPM - {int(meta['drain_time'])//60}:{int(meta['drain_time'])%60} drain time\n\n"
+                f"__Stats__\n"
+                f"**Picks:** {stat['picks']}\n"
+                f"**Bans:** {stat['bans']}\n"
+                f"**Total Scores:** {stat['total_scores']}\n"
+                f"**Avg. Score:** {comma_sep(stat['average_score'], 2)}\n"
+                f"**Avg. Acc:** {percentage(stat['average_acc'])}\n"
+                f"**1,000,000+:** {stat['one_mils']}\n"
+                f"\n"
+                f"__Histogram__\n"
+                f"soon™")
+        em_msg = discord.Embed(description=msg)
+        meta = map_doc["meta"]
+        full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
+        em_msg.set_author(name=full_name, url=f"https://osu.ppy.sh/b/{map_doc['_id']}")
+        em_msg.set_thumbnail(url=f"https://b.ppy.sh/thumb/{map_doc['set_id']}l.jpg")
+        em_msg.set_footer(text=f"You can get the best scores with \"mb {map_doc['_id']}\".")
+        await ctx.send(embed=em_msg)
 
     @commands.command(aliases=["mb"])
     async def mapbest(self, ctx, map_id, page=1, pool=None):
@@ -444,10 +468,7 @@ class UserStatsCommands(commands.Cog):
         user_doc = await db_get.get_user_document(ctx.message.author.id)
         await ctx.trigger_typing()
         image_object = await image_manip.make_map_best(score_docs, page, max_page, user_doc)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'map_best_{score_docs[0]["diff_id"]}-{page}.png'))
-        
-
-        
+        await ctx.send(file=discord.File(fp=image_object, filename=f'map_best_{score_docs[0]["diff_id"]}-{page}.png'))    
 
 #use the same bg and card system as teambest
     @commands.command(aliases=["sb"])
