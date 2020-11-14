@@ -274,7 +274,7 @@ async def get_top_map_scores(map_id, page=1, pool=None):
 async def get_top_tournament_players(leaderboard_field="score", page=1):
     """Get the best players (as documents) in a certain average category.
     
-    Returns the tuple (<players>, page, max_pages).
+    Returns the tuple `(<players>, page, max_pages)`.
     - `leaderboard` is any of `"acc"`, `"score"`, or `"contrib"`. `"score"` by default.
     - `page` determines the top scores to be returned. Pagination is done on a 10 score
     per page basis; if `page*10` exceeds the total number of scores of the player plus 10,

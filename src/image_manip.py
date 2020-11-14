@@ -618,7 +618,7 @@ async def make_server_best(score_docs, current_page, max_page, mod_filter = None
     img_binary.seek(0)
     return img_binary
 
-async def make_averagep_best(player_docs, current_page, max_page, category, invoker_name=None):
+async def make_averagep_best(player_docs, current_page, max_page, category, invoker_doc=None):
     """Generate and return the best players of the tournament in a certain category as an image.
     
     - `player_docs` is an array of player documents, 10 or fewer, of the map's scores.
@@ -631,9 +631,101 @@ async def make_averagep_best(player_docs, current_page, max_page, category, invo
     
     `current_page` and `max_page` are used solely for the page indicator in the upper-left of
     the image."""
-    pass
+    def draw_std(x, y, text, font="m"):
+        #looool
+        draw.text((x, y), str(text), (255, 255, 255), font=fonts[font], align='center', anchor="mm")
 
-async def make_averaget_best(team_docs, current_page, max_page, category, invoker_name=None):
+    def truncate(text, font="m"):
+        """Truncates long strings to the desired max width and adds an ellipsis if needed."""
+        max_width = 510
+
+        font = fonts[font]
+        ellipsis_width, _ = font.getsize("...")
+
+        width, _ = font.getsize(text)
+        if width>max_width:
+            while width>(max_width-ellipsis_width):
+                text = text[:-1]
+                width, _ = font.getsize(text)
+            text += "..."
+        return text
+
+    headers = {
+        "score":  ["Score", "Acc", "Contrib"],
+        "acc": ["Acc", "Score", "Contrib"],
+        "contrib": ["Contrib", "Score", "Acc"]
+    }
+
+    player_card_base_img_fp = "src/static/averagelb.png"
+    img = Image.open(player_card_base_img_fp, mode='r')
+
+    draw = ImageDraw.Draw(img)
+
+    #header
+    draw_std(640, 65, f"Best Players - {headers[category][0]}", "l") #team name
+
+    #page number
+    page_text = f"(page {current_page} of {max_page})" 
+    draw.text((36, 137), page_text, (255, 255, 255), font=fonts["s"], align='left', anchor="lm")
+
+    #table header
+    header_font = ImageFont.truetype("src/static/Renogare-Regular.otf", 25)
+    draw.text((259, 177), "Player", (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((487, 177), headers[category][0], (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((648, 177), headers[category][1], (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((806, 177), headers[category][2], (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((1063, 177), "Team", (255, 255, 255), font=header_font, align='center', anchor="mm")
+
+    #table
+    #x-dists: 70,116(left),266,876,1035,1172
+    #y-dist: 39 each row
+    for row, player in enumerate(player_docs):
+        stat = player["cached"]
+        header_order = {
+            "score":  [comma_sep(stat["average_score"]), percentage(stat["average_acc"]), percentage(stat["average_contrib"])],
+            "acc": [percentage(stat["average_acc"]), comma_sep(stat["average_score"]), percentage(stat["average_contrib"])],
+            "contrib": [percentage(stat["average_contrib"]), comma_sep(stat["average_score"]), percentage(stat["average_acc"])]
+        }
+
+        y_pos = (row*39)+216
+        draw_std(62, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        draw_std(259, y_pos, player["user_name"]) #player name
+        draw_std(487, y_pos, header_order[category][0])
+        draw_std(648, y_pos, header_order[category][1]) 
+        draw_std(806, y_pos, header_order[category][2]) 
+        draw_std(1063, y_pos, player["team_name"]) 
+
+    if invoker_doc["osu_id"]:
+        player_doc = await db_get.get_player_document(invoker_doc["osu_id"])
+        stat = player_doc["cached"]
+        header_order = {
+            "score":  [comma_sep(stat["average_score"]), percentage(stat["average_acc"]), percentage(stat["average_contrib"])],
+            "acc": [percentage(stat["average_acc"]), comma_sep(stat["average_score"]), percentage(stat["average_contrib"])],
+            "contrib": [percentage(stat["average_contrib"]), comma_sep(stat["average_score"]), percentage(stat["average_acc"])]
+        }
+        invoker_rank = {
+            "score": stat["score_rank"],
+            "acc": stat["acc_rank"],
+            "contrib": stat["contrib_rank"],
+        }
+        if math.floor(invoker_rank[category]/10) != current_page-1:
+            y_pos = 645
+            draw_std(62, y_pos-39, "...") #ellipsis
+            draw_std(62, y_pos, invoker_rank[category]) #numerical ranking
+            draw_std(259, y_pos, player_doc["user_name"]) #player name
+            draw_std(487, y_pos, header_order[category][0])
+            draw_std(648, y_pos, header_order[category][1]) 
+            draw_std(806, y_pos, header_order[category][2]) 
+            draw_std(1063, y_pos, player_doc["team_name"]) 
+
+    #i guess you have to seek before you actually do the thing
+    #solution from here: #https://stackoverflow.com/questions/63209888/send-pillow-image-on-discord-without-saving-the-image
+    img_binary = io.BytesIO()
+    img.save(img_binary, 'PNG')
+    img_binary.seek(0)
+    return img_binary
+
+async def make_averaget_best(team_docs, current_page, max_page, category, invoker_doc=None):
     """Generate and return the best teams of the tournament in a certain category as an image.
     
     - `team_docs` is an array of player documents, 10 or fewer, of the map's scores.

@@ -481,21 +481,33 @@ class UserStatsCommands(commands.Cog):
             await prompts.error_embed(self.bot, ctx, 'Not a valid leaderboard category - '
                                       '`score`, `acc`, and `contrib` are allowed. '
                                       'The leaderboard category **must** come first in '
-                                      'your command.')
+                                      'your command if you use it.')
             return None
         score_docs, page, max_page = await db_get.get_top_tournament_scores(leaderboard_category, page, mod)
         await ctx.trigger_typing()
         image_object = await image_manip.make_server_best(score_docs, page, max_page, mod, leaderboard_category)
         await ctx.send(file=discord.File(fp=image_object, filename=f'server_best-{page}.png')) 
 
-
     @commands.command(aliases=["avglbp", "averageleaderboardp"])
-    async def averagelbp(self, ctx, leaderboard="score", page=1):
+    async def averagelbp(self, ctx, *params):
         """Get the best players of the given statistic.
         
         -`leaderboard` is any of "acc", "score", or "contrib". 
         -`page` works the same as every other paginated command.""" 
-        pprint.pprint(await db_get.get_top_tournament_players(leaderboard, page))
+        leaderboard_category, page, _ = argparser(params)
+        if not leaderboard_category:
+            leaderboard_category = "score"
+        if leaderboard_category.lower() not in ["score", "acc", "contrib"]:
+            await prompts.error_embed(self.bot, ctx, 'Not a valid leaderboard category - '
+                                      '`score`, `acc`, and `contrib` are allowed. '
+                                      'The leaderboard category **must** come first in '
+                                      'your command if you use it.')
+            return None
+        score_docs, page, max_page = await db_get.get_top_tournament_players(leaderboard_category, page)
+        user_doc = await db_get.get_user_document(ctx.message.author.id)
+        await ctx.trigger_typing()
+        image_object = await image_manip.make_averagep_best(score_docs, page, max_page, leaderboard_category, user_doc)
+        await ctx.send(file=discord.File(fp=image_object, filename=f'server_best-{page}.png')) 
 
     @commands.command(aliases=["avglbt", "averageleaderboardt"])
     async def averagelbt(self, ctx, leaderboard="score", page=1):
