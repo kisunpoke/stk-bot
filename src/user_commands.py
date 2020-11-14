@@ -479,7 +479,9 @@ class UserStatsCommands(commands.Cog):
             leaderboard_category = "score"
         if leaderboard_category.lower() not in ["score", "acc", "contrib"]:
             await prompts.error_embed(self.bot, ctx, 'Not a valid leaderboard category - '
-                                      '`score`, `acc`, and `contrib` are allowed.')
+                                      '`score`, `acc`, and `contrib` are allowed. '
+                                      'The leaderboard category **must** come first in '
+                                      'your command.')
             return None
         score_docs, page, max_page = await db_get.get_top_tournament_scores(leaderboard_category, page, mod)
         await ctx.trigger_typing()
