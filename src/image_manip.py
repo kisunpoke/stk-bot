@@ -41,7 +41,7 @@ async def make_team_best(score_docs, current_page, max_page, mod_filter = None):
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
         max_width = 487
 
-        font = fonts["m"]
+        font = fonts[font]
         ellipsis_width, _ = font.getsize("...")
 
         width, _ = font.getsize(text)
@@ -52,7 +52,7 @@ async def make_team_best(score_docs, current_page, max_page, mod_filter = None):
             text += "..."
         return text
 
-    player_card_base_img_fp = "src/static/score_1.png"
+    player_card_base_img_fp = "src/static/teambest.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
@@ -97,7 +97,7 @@ async def make_team_best(score_docs, current_page, max_page, mod_filter = None):
         draw.line([546,y_pos-19,546,y_pos+19], colors[score["map_type"]], 5) #modline
         meta = map_doc["meta"]
         full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
-        draw.text((556, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
+        draw.text((556, y_pos), truncate(full_name, "s"), (255, 255, 255), font=fonts["s"],
                    align='left', anchor="lm") #map name
 
         draw_std(1160, y_pos, comma_sep(score["score"])) #score
@@ -223,7 +223,7 @@ async def make_player_best(score_docs, current_page, max_page, mod_filter = None
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
         max_width = 510
 
-        font = fonts["m"]
+        font = fonts[font]
         ellipsis_width, _ = font.getsize("...")
 
         width, _ = font.getsize(text)
@@ -277,7 +277,7 @@ async def make_player_best(score_docs, current_page, max_page, mod_filter = None
         draw.line([257,y_pos-19,257,y_pos+19], colors[score["map_type"]], 5) #modline
         meta = map_doc["meta"]
         full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
-        draw.text((267, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
+        draw.text((267, y_pos), truncate(full_name, "s"), (255, 255, 255), font=fonts["s"],
                    align='left', anchor="lm") #map name
 
         draw_std(876, y_pos, comma_sep(score["score"])) #score
@@ -532,9 +532,9 @@ async def make_server_best(score_docs, current_page, max_page, mod_filter = None
 
     def truncate(text, font="m"):
         """Truncates long strings to the desired max width and adds an ellipsis if needed."""
-        max_width = 487
+        max_width = 373
 
-        font = fonts["m"]
+        font = fonts[font]
         ellipsis_width, _ = font.getsize("...")
 
         width, _ = font.getsize(text)
@@ -546,14 +546,27 @@ async def make_server_best(score_docs, current_page, max_page, mod_filter = None
         return text
     #literally a copypaste of teambest lol
 
-    player_card_base_img_fp = "src/static/score_1.png"
+    #we change the category order based on the ordering
+    #array 1 is the actual score doc references, array 2 is the table headers
+    header_order = {
+        "score":  ["Score", "Acc", "Contrib"],
+        "acc": ["Acc", "Score", "Contrib"],
+        "contrib": ["Contrib", "Score", "Acc"]
+    }
+
+    player_card_base_img_fp = "src/static/serverbest.png"
     img = Image.open(player_card_base_img_fp, mode='r')
 
     draw = ImageDraw.Draw(img)
 
     #header
-    draw_std(640, 65, f"Best Plays - {category}", "l") #header 1
-    #draw_std(640, 105, " • ".join(player_names)) #header 2
+    draw_std(640, 65, f"Top Scores - {header_order[category][0]}", "l") #static
+
+    #table header
+    header_font = ImageFont.truetype("src/static/Renogare-Regular.otf", 25)
+    draw.text((916, 177), header_order[category][0], (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((1046, 177), header_order[category][1], (255, 255, 255), font=header_font, align='center', anchor="mm")
+    draw.text((1176, 177), header_order[category][2], (255, 255, 255), font=header_font, align='center', anchor="mm")
 
     #page number
     page_text = f"(page {current_page} of {max_page})" 
@@ -575,23 +588,30 @@ async def make_server_best(score_docs, current_page, max_page, mod_filter = None
     for row, score in enumerate(score_docs):
         map_doc = await db_get.get_map_document(score["diff_id"])
 
+        header_order = {
+            "score":  [comma_sep(score["score"]), percentage(score["accuracy"]), percentage(score["contrib"])],
+            "acc": [percentage(score["accuracy"]), comma_sep(score["score"]), percentage(score["contrib"])],
+            "contrib": [percentage(score["contrib"]), comma_sep(score["score"]), percentage(score["accuracy"])]
+        }
+
         banner_fp = await image_handling.get_banner_fp(map_doc["set_id"])
         banner = Image.open(banner_fp, mode='r')
         banner = banner.resize((139,37))
 
         y_pos = (row*39)+216
 
-        draw_std(76, y_pos, (current_page-1)*10+row+1) #numerical ranking
-        draw_std(267, y_pos, score["user_name"]) #player name
+        draw_std(55, y_pos, (current_page-1)*10+row+1) #numerical ranking
+        draw_std(205, y_pos, score["user_name"]) #player name
         #tuple refers to top-left corner, so half the banner's height is subtracted
-        img.paste(banner, (406,y_pos-19)) #map banner
-        draw.line([546,y_pos-19,546,y_pos+19], colors[score["map_type"]], 5) #modline
+        img.paste(banner, (321,y_pos-19)) #map banner
+        draw.line([461,y_pos-19,461,y_pos+19], colors[score["map_type"]], 5) #modline
         meta = map_doc["meta"]
         full_name = meta["map_artist"]+" - "+meta["map_song"]+" ["+meta["map_diff"]+"]"
-        draw.text((556, y_pos), truncate(full_name), (255, 255, 255), font=fonts["m"],
+        draw.text((471, y_pos), truncate(full_name, "s"), (255, 255, 255), font=fonts["s"],
                    align='left', anchor="lm") #map name
-
-        draw_std(1160, y_pos, comma_sep(score["score"])) #score
+        draw_std(916, y_pos, header_order[category][0], "s")
+        draw_std(1046, y_pos, header_order[category][1], "s")
+        draw_std(1176, y_pos, header_order[category][2], "s")
 
     img_binary = io.BytesIO()
     img.save(img_binary, 'PNG')

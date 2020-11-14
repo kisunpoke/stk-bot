@@ -354,7 +354,10 @@ async def get_top_tournament_scores(leaderboard_field="score", page=1, mod=None)
     If no scores are found, `([], 0, <page>)` is returned."""
     score_collection = client['matches_and_scores']['scores']
 
-    score_count = await score_collection.estimated_document_count()
+    if mod is None:
+        score_count = await score_collection.estimated_document_count()
+    else:
+        score_count = await score_collection.count_documents({"map_type": mod})
 
     max_page = math.ceil(score_count/10)
     if page < 0:
