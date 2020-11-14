@@ -23,22 +23,13 @@ pp/rank from most recent update
 ^leaderboard?
 update only players/mappool/meta etc
 full match stats under match_commands.py
-implement cards (render leaderboards, player stats, team stats, etc)
-implement text stats (same as above but text-only) #https://discordpy.readthedocs.io/en/latest/faq.html#how-do-i-use-a-local-image-file-for-an-embed-image for histograms and others
-for leaderboards, show where the user stands on any given page
-argparser for UserStatsCommands
 proper error handling
 make roles and other things not hardcoded
 proper admin help
 admin commands
 check if restricted users return standard api responses
-change certain template images to be actual templates with no table headers that are added on later
-change serverbest to have a thinner map column with a blank last and second-to-last column
-and return teambest to original
 
 matchstats
-averagelbp
-averagelbt
 
 '''
 

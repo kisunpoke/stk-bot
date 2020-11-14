@@ -507,13 +507,26 @@ class UserStatsCommands(commands.Cog):
         user_doc = await db_get.get_user_document(ctx.message.author.id)
         await ctx.trigger_typing()
         image_object = await image_manip.make_averagep_best(score_docs, page, max_page, leaderboard_category, user_doc)
-        await ctx.send(file=discord.File(fp=image_object, filename=f'server_best-{page}.png')) 
+        await ctx.send(file=discord.File(fp=image_object, filename=f'player_average_best_{leaderboard_category}-{page}.png')) 
 
     @commands.command(aliases=["avglbt", "averageleaderboardt"])
-    async def averagelbt(self, ctx, leaderboard="score", page=1):
+    async def averagelbt(self, ctx, *params):
         """Get the best teams of the given statistic.
         
-        `leaderboard` is either "acc" or "score". `page` works
-        the same as every other paginated command.""" 
-        pprint.pprint(await db_get.get_top_tournament_teams(leaderboard, page))
+        -`leaderboard` is either "acc" or "score". 
+        -`page` works the same as every other paginated command.""" 
+        leaderboard_category, page, _ = argparser(params)
+        if not leaderboard_category:
+            leaderboard_category = "score"
+        if leaderboard_category.lower() not in ["score", "acc"]:
+            await prompts.error_embed(self.bot, ctx, 'Not a valid leaderboard category - '
+                                      '`score` and `acc` are allowed. '
+                                      'The leaderboard category **must** come first in '
+                                      'your command if you use it.')
+            return None
+        score_docs, page, max_page = await db_get.get_top_tournament_teams(leaderboard_category, page)
+        user_doc = await db_get.get_user_document(ctx.message.author.id)
+        await ctx.trigger_typing()
+        image_object = await image_manip.make_averaget_best(score_docs, page, max_page, leaderboard_category, user_doc)
+        await ctx.send(file=discord.File(fp=image_object, filename=f'team_average_best_{leaderboard_category}-{page}.png')) 
     
