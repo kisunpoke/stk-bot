@@ -51,13 +51,17 @@ bot.add_cog(user_commands.UserStatsCommands(bot))
 async def on_ready():
     print('ready!')
 
-'''
 @bot.event
 async def on_command_error(ctx, exception):
     #check the exception type - command not found, params incorrect, runtime error, etc.
-    print(exception)
-    await prompts.error_embed(bot, ctx, "An error occurred:", str(exception))
-'''
+    if isinstance(exception, commands.BadArgument) or isinstance(exception, commands.MissingRequiredArgument):
+        text = f"Couldn't parse command...\n\nExepcted usage:\n{general_commands.help[ctx.command.name]['signature']}"
+        await prompts.error_embed(bot, ctx, text, f"maybe try \"help {ctx.command.name}\"?")
+    elif isinstance(exception, commands.CommandNotFound):
+        await ctx.message.add_reaction("🤔")
+    else:
+        await prompts.error_embed(bot, ctx, "An uncaught exception occurred:", exception)
+    
 
 bot.run(token)
 
