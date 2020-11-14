@@ -35,7 +35,8 @@ matchstats
 
 token = os.getenv("bot_token")
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("!!"))
+prefix = "!!"
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix))
 
 bot.remove_command('help')
 
@@ -49,6 +50,7 @@ bot.add_cog(user_commands.UserStatsCommands(bot))
 
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=discord.Game(name=f'{prefix}help'))
     print('ready!')
 
 @bot.event
