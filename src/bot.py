@@ -23,7 +23,6 @@ pp/rank from most recent update
 ^leaderboard?
 update only players/mappool/meta etc
 full match stats under match_commands.py
-proper error handling
 make roles and other things not hardcoded
 proper admin help
 admin commands

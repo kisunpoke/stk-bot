@@ -6,6 +6,7 @@ necessary.
 import aiohttp
 from enum import IntFlag
 import os
+import math
 
 import db_manip
 import db_get
@@ -96,6 +97,9 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     obtained and processed. If available, `player_ids` should be provided, a dict of `player_ids`
     (str) to [`player_names` (str), `team_name` (str)].
 
+    Map indexes are redirected like other paginated functions; indexes less than 0 become 0, and 
+    indexes greater than the max index become the max index.
+
     - `ignore_player_list` will ignore specific player ids from calculation. 
     - `ignore_threshold` will ignore scores below a specific value. 1000 by default.
 
@@ -148,12 +152,18 @@ async def process_match_data(match_id, map, *, data=None, player_ids={}, ignore_
     ```
     """
     match_data = data
+
     if not match_data:
         match_data = await get_match_data(match_id)
-    try:
-        game_data = match_data["games"][int(map)]
-    except:
-        return None
+
+    max_index = len(match_data["games"])-1
+    if map < 0:
+        map = 1
+    if map > max_index:
+        map = max_index
+
+    game_data = match_data["games"][int(map)]
+
     #stop execution here if no scores are available, but there was a game for some reason
     if not game_data['scores']:
         return None

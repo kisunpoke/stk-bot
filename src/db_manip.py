@@ -80,6 +80,7 @@ The cluster structure is as follows:
 `Match` documents have the following fields:
 {
     _id: str (mp_id; guaranteed to be unique),
+    match_name: str,
     ref_name: str,
     ref_id: str,
     scores: [str, str, ...], #Score document _id's
@@ -95,7 +96,7 @@ The cluster structure is as follows:
     },
     player_stats:{
         <player_id>:{
-            username: str
+            user_name: str
             team: str (1/2)
             average_acc: double
             average_score: int (rounded)
@@ -920,6 +921,7 @@ async def create_match_stats(match_dict):
     for mp_id in match_dict:
         match_document = {
             '_id': mp_id,
+            'match_name': match_dict[mp_id][0]["match_name"],
             'ref_name': None,
             'ref_id': None,
             'scores': [],
