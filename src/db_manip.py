@@ -1082,7 +1082,7 @@ async def get_all_gsheet_data(bot, ctx, sheet_id):
 
             #wait for user response
             def check(m):
-                return m.channel.id==774881438817845289
+                return m.channel.id==776869963214356561
 
             try:
                 msg = await bot.wait_for('message', timeout=60.0, check=check)
