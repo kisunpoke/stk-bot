@@ -28,7 +28,7 @@ class StaffCommands(commands.Cog):
 
     #limit usage to those with staff role only
     async def cog_check(self, ctx):
-        staff_role = discord.utils.get(ctx.guild.roles, id=773752811539791902)
+        staff_role = discord.utils.get(ctx.guild.roles, id=777321789817618433)
         if staff_role in ctx.message.author.roles:
             return True
         else:
@@ -80,7 +80,6 @@ class StaffCommands(commands.Cog):
         else:
             await prompts.error_embed(self.bot, ctx, "An error occurred:", error)
 
-
 class AdminConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -99,8 +98,8 @@ class AdminDatabaseCommands(commands.Cog):
 
     #limit usage to admins only
     async def cog_check(self, ctx):
-        staff_role = discord.utils.get(ctx.guild.roles, id=773765194152411176)
-        if staff_role in ctx.message.author.roles:
+        admin_role = discord.utils.get(ctx.guild.roles, id=777321727528534036)
+        if admin_role in ctx.message.author.roles:
             return True
         else:
             return False
@@ -142,9 +141,9 @@ class AdminDatabaseCommands(commands.Cog):
                 await db_manip.rebuild_all(self.bot, ctx, sheet_id)
         else:
             msg = ("hardcoded IDs:\n"
-                   "STK8 data (full): 1OfLrz4o-Qt5k_JvpVl8CSiZsRt-veiFlFkuG8G0BnzU\n"
-                   "STK8 data (minimal): -\n"
-                   "STK9 data: -")
+                   "STK7 data (full): 1OfLrz4o-Qt5k_JvpVl8CSiZsRt-veiFlFkuG8G0BnzU\n"
+                   "STK7 data (minimal): -\n"
+                   "STK8 data: -")
             await prompts.std_embed(self.bot, ctx, msg)
 
     
