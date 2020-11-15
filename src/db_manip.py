@@ -1073,7 +1073,7 @@ async def get_all_gsheet_data(bot, ctx, sheet_id):
             #this chat should already be limited to people with access to the main google account/the sheet
             #this "restricted chat" thing might not be needed (especially if the sheet this bot's data will be based on is public)
             #but i'd say it doesn't hurt to hide things from people who don't need them 
-            auth_channel = bot.get_channel(774881438817845289) #have this in the bot's meta document so it isn't hardcoded in the future
+            auth_channel = bot.get_channel(776869963214356561) #have this in the bot's meta document so it isn't hardcoded in the future
             auth_msg = await auth_channel.send(f'{ctx.message.author.mention}\n\n'
                                                f'An authorization event has been triggered. Please go to this URL: {auth_url}'
                                                f' and complete the process. Type the access code as your next message.'
